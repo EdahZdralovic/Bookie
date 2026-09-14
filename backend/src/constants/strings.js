@@ -1,0 +1,21 @@
+module.exports = Object.freeze({
+  BOOK: Object.freeze({
+    PAGE_TITLE: 'Add a book', EYEBROW: 'YOUR NEXT CHAPTER', HEADING: 'Give your book a new reader.',
+    DESCRIPTION: 'Share a book from your shelf with readers in your city.', BACK: 'Back to account',
+    TITLE: 'Book title', AUTHOR: 'Author', PUBLISHER: 'Publisher', YEAR: 'Publication year', ISBN: 'ISBN',
+    DESCRIPTION_LABEL: 'Description', PRICE: 'Price (BAM)', EXCHANGE: 'Available for exchange',
+    GENRE: 'Genre', LANGUAGE: 'Language', CONDITION: 'Condition', IMAGE: 'Cover image URL', CITY: 'Pickup city',
+    IMAGE_HINT: 'Optional. Use a publicly accessible image URL.', PRICE_HINT: 'Enter 0 only when the book is available for exchange.',
+    SAVE: 'Publish book', SAVING: 'Publishing…', REQUIRED: 'All marked fields are required.',
+    EXCHANGE_HINT: 'Buyers may offer this book in an exchange.', SUCCESS: 'Your book was published successfully.',
+  }),
+  PROFILE: Object.freeze({
+    PAGE_TITLE: 'My profile', EYEBROW: 'YOUR READING PROFILE', HEADING: 'Make your profile yours.',
+    DESCRIPTION: 'Update your photo, city and the genres and languages you want to discover.',
+    AVATAR: 'Profile image URL', AVATAR_HINT: 'Optional. Use a publicly accessible image URL.', SAVE: 'Save profile', SAVING: 'Saving…',
+    GENRES: 'Genres you are interested in', LANGUAGES: 'Languages you prefer', INTEREST_HINT: 'Select at least one genre and one language.',
+    SUCCESS: 'Your profile was updated successfully.', ACCOUNT: 'Back to account',
+  }),
+  COMMON: Object.freeze({ REQUIRED: 'Required', SELECT: 'Select an option', CLEAR: 'Clear', ERROR_TITLE: 'Please check your details',
+    LOGIN: 'Log in', REGISTER: 'Create account', HOME: 'Home', NO_OPTIONS: 'No options available.', PROFILE: 'Profile', ADD_BOOK: 'Add book', EDIT_PROFILE: 'Edit profile' }),
+});
