@@ -1,0 +1,559 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  Int                       @id @default(autoincrement())
+  firstName           String
+  lastName            String
+  email               String                    @unique
+  passwordHash        String
+  role                UserRole                  @default(BUYER)
+  status              AccountStatus             @default(ACTIVE)
+  avatarUrl           String?
+  bio                 String?
+  cityId              Int?
+  city                City?                     @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  blockedUntil        DateTime?
+  archivedAt          DateTime?
+  books               Book[]
+  sessions            Session[]
+  genreInterests      UserGenreInterest[]
+  languageInterests   UserLanguageInterest[]
+  cart                Cart?
+  buyerOrders         Order[]                   @relation("BuyerOrders")
+  sellerOrders        Order[]                   @relation("SellerOrders")
+  orderStatusChanges  OrderStatusHistory[]
+  conversationMembers ConversationParticipant[]
+  messages            Message[]
+  notifications       Notification[]
+  reportsSent         Report[]                  @relation("ReportsSent")
+  reportsReceived     Report[]                  @relation("ReportedUsers")
+  reportsResolved     Report[]                  @relation("ReportsResolved")
+  wishlistAlerts      WishlistAlert[]
+  badges              UserBadge[]
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  @@index([role])
+  @@index([status])
+  @@index([cityId])
+}
+
+model Session {
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique @db.Char(64)
+  revokedAt DateTime?
+  expiresAt DateTime
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model City {
+  id           Int                  @id @default(autoincrement())
+  name         String               @unique
+  isActive     Boolean              @default(true)
+  users        User[]
+  pickupBooks  BookPickupLocation[]
+  pickupPoints PickupPoint[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model Genre {
+  id             Int                 @id @default(autoincrement())
+  name           String              @unique
+  slug           String              @unique
+  isActive       Boolean             @default(true)
+  books          Book[]
+  userInterests  UserGenreInterest[]
+  wishlistAlerts WishlistAlert[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+model Language {
+  id             Int                    @id @default(autoincrement())
+  name           String                 @unique
+  code           String                 @unique
+  isActive       Boolean                @default(true)
+  books          Book[]
+  userInterests  UserLanguageInterest[]
+  wishlistAlerts WishlistAlert[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+}
+
+model BookCondition {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  books     Book[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  slug      String    @unique
+  isActive  Boolean   @default(true)
+  books     BookTag[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Book {
+  id                 Int                  @id @default(autoincrement())
+  publicId           String               @unique @default(cuid())
+  title              String
+  author             String
+  publisher          String
+  publicationYear    Int
+  isbn               String?
+  course             String?
+  description        String
+  imageUrl           String?
+  price              Decimal              @db.Decimal(10, 2)
+  allowExchange      Boolean              @default(false)
+  status             BookStatus           @default(ACTIVE)
+  viewCount          Int                  @default(0)
+  ownerId            Int
+  owner              User                 @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  genreId            Int
+  genre              Genre                @relation(fields: [genreId], references: [id], onDelete: Restrict)
+  languageId         Int
+  language           Language             @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  conditionId        Int
+  condition          BookCondition        @relation(fields: [conditionId], references: [id], onDelete: Restrict)
+  images             BookImage[]
+  pickupLocations    BookPickupLocation[]
+  tags               BookTag[]
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+  offeredInExchanges ExchangeOfferBook[]
+  reservation        BookReservation?
+  wishlistMatches    WishlistMatch[]
+  conversationBooks  ConversationBook[]
+  reports            Report[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([ownerId, status, createdAt])
+  @@index([isbn])
+  @@index([status, createdAt])
+  @@index([genreId])
+  @@index([languageId])
+  @@index([conditionId])
+  @@index([price])
+  @@index([createdAt])
+}
+
+model BookImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  altText   String?
+  sortOrder Int      @default(0)
+  bookId    Int
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([bookId])
+}
+
+model BookPickupLocation {
+  bookId Int
+  cityId Int
+  book   Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  city   City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, cityId])
+  @@index([cityId])
+}
+
+model BookTag {
+  bookId Int
+  tagId  Int
+  book   Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, tagId])
+  @@index([tagId])
+}
+
+model UserGenreInterest {
+  userId  Int
+  genreId Int
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  genre   Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([userId, genreId])
+  @@index([genreId])
+}
+
+model UserLanguageInterest {
+  userId     Int
+  languageId Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language   Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@id([userId, languageId])
+  @@index([languageId])
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    Int        @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  bookId    Int
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([cartId, bookId])
+  @@index([bookId])
+}
+
+model Order {
+  id            Int                  @id @default(autoincrement())
+  orderNumber   String               @unique
+  type          OrderType            @default(PURCHASE)
+  status        OrderStatus          @default(PENDING)
+  totalAmount   Decimal              @default(0) @db.Decimal(12, 2)
+  currency      String               @default("BAM") @db.Char(3)
+  pickupPointId Int?
+  pickupPoint   PickupPoint?         @relation(fields: [pickupPointId], references: [id], onDelete: Restrict)
+  pickupAddress String?
+  acceptedAt    DateTime?
+  rejectedAt    DateTime?
+  statusHistory OrderStatusHistory[]
+  reservations  BookReservation[]
+  buyerNote     String?
+  sellerNote    String?
+  buyerId       Int
+  buyer         User                 @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
+  sellerId      Int
+  seller        User                 @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
+  items         OrderItem[]
+  exchangeOffer ExchangeOffer?
+  conversations Conversation[]
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([pickupPointId])
+  @@index([buyerId, status])
+  @@index([sellerId, status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  bookId     Int
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  price      Decimal  @db.Decimal(10, 2)
+  bookTitle  String
+  bookAuthor String
+  review     Review?
+  createdAt  DateTime @default(now())
+
+  @@unique([orderId, bookId])
+  @@index([bookId])
+}
+
+model ExchangeOffer {
+  id           Int                 @id @default(autoincrement())
+  orderId      Int                 @unique
+  order        Order               @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  note         String?
+  offeredBooks ExchangeOfferBook[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model ExchangeOfferBook {
+  exchangeOfferId Int
+  bookId          Int
+  exchangeOffer   ExchangeOffer @relation(fields: [exchangeOfferId], references: [id], onDelete: Cascade)
+  book            Book          @relation(fields: [bookId], references: [id], onDelete: Restrict)
+
+  @@id([exchangeOfferId, bookId])
+  @@index([bookId])
+}
+
+// The reviewed book, buyer and seller are obtained through OrderItem -> Order.
+// Keeping one source of truth prevents a review pointing at another buyer/book.
+model Review {
+  id            Int       @id @default(autoincrement())
+  rating        Int
+  comment       String?
+  orderItemId   Int       @unique
+  orderItem     OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  editableUntil DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Conversation {
+  id           Int                       @id @default(autoincrement())
+  subject      String?
+  orderId      Int?
+  order        Order?                    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  participants ConversationParticipant[]
+  books        ConversationBook[]
+  messages     Message[]
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@index([orderId])
+}
+
+model ConversationParticipant {
+  conversationId Int
+  userId         Int
+  lastReadAt     DateTime?
+  joinedAt       DateTime     @default(now())
+  messages       Message[]    @relation("ParticipantMessages")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model ConversationBook {
+  conversationId Int
+  bookId         Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  book           Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, bookId])
+  @@index([bookId])
+}
+
+model Message {
+  id             Int                     @id @default(autoincrement())
+  body           String
+  conversationId Int
+  conversation   Conversation            @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       Int
+  participant    ConversationParticipant @relation("ParticipantMessages", fields: [conversationId, senderId], references: [conversationId, userId], onDelete: Restrict)
+  sender         User                    @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  createdAt      DateTime                @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model Notification {
+  id            Int              @id @default(autoincrement())
+  type          NotificationType
+  title         String
+  body          String
+  link          String?
+  isRead        Boolean          @default(false)
+  eventKey      String?          @unique
+  wishlistMatch WishlistMatch?
+  userId        Int
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+
+  @@index([userId, isRead])
+}
+
+model Report {
+  id             Int          @id @default(autoincrement())
+  reason         String
+  details        String?
+  status         ReportStatus @default(OPEN)
+  reporterId     Int
+  reporter       User         @relation("ReportsSent", fields: [reporterId], references: [id], onDelete: Restrict)
+  reportedUserId Int?
+  reportedUser   User?        @relation("ReportedUsers", fields: [reportedUserId], references: [id], onDelete: Restrict)
+  bookId         Int?
+  book           Book?        @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  resolvedById   Int?
+  resolvedBy     User?        @relation("ReportsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolvedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([status])
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([bookId])
+}
+
+model WishlistAlert {
+  id         Int             @id @default(autoincrement())
+  query      String?
+  author     String?
+  isbn       String?
+  userId     Int
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  genreId    Int?
+  genre      Genre?          @relation(fields: [genreId], references: [id], onDelete: Restrict)
+  languageId Int?
+  language   Language?       @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  isActive   Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  matches    WishlistMatch[]
+
+  @@index([userId])
+}
+
+model PickupPoint {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String
+  type      String?
+  cityId    Int
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  orders    Order[]
+  updatedAt DateTime @updatedAt
+
+  @@unique([cityId, name])
+}
+
+model Badge {
+  id                     Int         @id @default(autoincrement())
+  name                   String      @unique
+  description            String
+  code                   String      @unique
+  minimumCompletedOrders Int         @default(0)
+  minimumAverageRating   Decimal     @default(0) @db.Decimal(3, 2)
+  maximumResponseHours   Int?
+  isActive               Boolean     @default(true)
+  updatedAt              DateTime    @updatedAt
+  icon                   String?
+  users                  UserBadge[]
+  createdAt              DateTime    @default(now())
+}
+
+model UserBadge {
+  userId    Int
+  badgeId   Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  awardedAt DateTime @default(now())
+
+  @@id([userId, badgeId])
+  @@index([badgeId])
+}
+
+enum UserRole {
+  ADMIN
+  SELLER
+  BUYER
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  ARCHIVED
+}
+
+enum BookStatus {
+  ACTIVE
+  RESERVED
+  SOLD
+  EXCHANGED
+  ARCHIVED
+}
+
+enum OrderType {
+  PURCHASE
+  EXCHANGE
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum NotificationType {
+  ORDER
+  MESSAGE
+  REVIEW
+  SYSTEM
+  WISHLIST_MATCH
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+// One row per physical book prevents two orders reserving the same copy.
+// Services create/delete all reservations in the order transition transaction.
+model BookReservation {
+  bookId     Int      @id
+  orderId    Int
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  reservedAt DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model OrderStatusHistory {
+  id          Int          @id @default(autoincrement())
+  orderId     Int
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  changedById Int
+  changedBy   User         @relation(fields: [changedById], references: [id], onDelete: Restrict)
+  note        String?
+  createdAt   DateTime     @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([changedById])
+}
+
+// A match is stored once; linking its notification enables deduplicated alerts.
+model WishlistMatch {
+  wishlistAlertId Int
+  bookId          Int
+  notificationId  Int?          @unique
+  wishlistAlert   WishlistAlert @relation(fields: [wishlistAlertId], references: [id], onDelete: Cascade)
+  book            Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  notification    Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+
+  @@id([wishlistAlertId, bookId])
+  @@index([bookId])
+}

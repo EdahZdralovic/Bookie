@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="bs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title><%= title %> — Bookie</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/auth.css">
+  <script src="/js/auth.js" defer></script>
+</head>
+<body class="auth-body">
+  <div class="auth-shell">
+    <aside class="auth-aside">
+      <a class="auth-brand" href="<%= auth.PATHS.HOME %>" aria-label="Bookie"><span class="brand-mark" aria-hidden="true">b.</span><span>bookie<span class="brand-dot">.</span></span></a>
+      <div class="aside-content">
+        <p class="auth-eyebrow"><span></span><%= authText.ASIDE_EYEBROW %></p>
+        <h1><%= authText.ASIDE_TITLE %></h1>
+        <p class="aside-description"><%= authText.ASIDE_BODY %></p>
+        <div class="book-scene" aria-hidden="true">
+          <div class="scene-orbit"></div>
+          <div class="scene-book book-back"><span><%= authText.BOOK_BACK %></span></div>
+          <div class="scene-book book-front"><span class="book-top"><%= authText.BOOK_TOP %></span><span class="book-title"><%= authText.BOOK_TITLE %></span><span class="book-footer"><%= authText.BOOK_FOOTER %></span></div>
+          <span class="scene-spark spark-one">✳</span><span class="scene-spark spark-two">✳</span>
+          <div class="scene-note"><span>↗</span><%= authText.BOOK_NOTE %></div>
+        </div>
+      </div>
+      <p class="aside-footer"><span aria-hidden="true">↻</span><%= authText.ASIDE_FOOTER %></p>
+    </aside>
+    <main class="auth-main">
+      <a class="auth-back" href="<%= auth.PATHS.HOME %>"><span aria-hidden="true">←</span><%= authText.BACK_HOME %></a>
+      <div class="auth-content <%= page === 'register' ? 'registration-content' : '' %>">
+        <div class="auth-tabs" aria-label="<%= authText.NAV_LABEL %>">
+          <a href="<%= auth.PATHS.LOGIN %>" class="<%= page === 'login' ? 'is-active' : '' %>" <%- page === 'login' ? 'aria-current="page"' : '' %>><%= authText.LOGIN_BUTTON %></a>
+          <a href="<%= auth.PATHS.REGISTER %>" class="<%= page === 'register' ? 'is-active' : '' %>" <%- page === 'register' ? 'aria-current="page"' : '' %>><%= authText.REGISTER_BUTTON %></a>
+        </div>
+        <p class="auth-step"><%= page === 'register' ? authText.REGISTER_EYEBROW : authText.LOGIN_EYEBROW %></p>
+        <h2><%= page === 'register' ? authText.REGISTER_TITLE : authText.LOGIN_TITLE %></h2>
+        <p class="auth-description"><%= page === 'register' ? authText.REGISTER_SUBTITLE : authText.LOGIN_SUBTITLE %></p>
+        <form method="post" action="<%= page === 'register' ? auth.PATHS.REGISTER : auth.PATHS.LOGIN %>" class="auth-form" data-auth-form data-page="<%= page %>" data-messages="<%= JSON.stringify(exceptions) %>" data-ui="<%= JSON.stringify(authText) %>" data-policy="<%= JSON.stringify(auth.PASSWORD) %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-alert" role="alert" data-form-alert <%= formError ? '' : 'hidden' %>>
+            <span class="alert-icon" aria-hidden="true">!</span><div><strong><%= authText.FORM_ERROR_TITLE %></strong><p data-form-message><%= formError %></p></div>
+          </div>
+          <% if (page === 'register') { %>
+            <p class="required-note"><%= authText.ALL_REQUIRED %></p>
+            <div class="auth-field-row">
+              <%- include('../components/auth-field', { name: 'firstName', label: authText.FIRST_NAME, type: 'text', autocomplete: 'given-name' }) %>
+              <%- include('../components/auth-field', { name: 'lastName', label: authText.LAST_NAME, type: 'text', autocomplete: 'family-name' }) %>
+            </div>
+          <% } %>
+          <%- include('../components/auth-field', { name: 'email', label: authText.EMAIL, type: 'email', autocomplete: 'username' }) %>
+          <%- include('../components/auth-field', { name: 'password', label: authText.PASSWORD, type: 'password', autocomplete: page === 'register' ? 'new-password' : 'current-password' }) %>
+          <% if (page === 'register') { %>
+            <ul class="password-rules" id="password-rules">
+              <li data-rule="length"><span aria-hidden="true">○</span><%= authText.PASSWORD_LENGTH %></li>
+              <li data-rule="uppercase"><span aria-hidden="true">○</span><%= authText.PASSWORD_UPPERCASE %></li>
+              <li data-rule="number"><span aria-hidden="true">○</span><%= authText.PASSWORD_NUMBER %></li>
+            </ul>
+            <%- include('../components/auth-field', { name: 'repeatPassword', label: authText.REPEAT_PASSWORD, type: 'password', autocomplete: 'new-password' }) %>
+            <p class="password-match" data-password-match aria-live="polite"><%= authText.PASSWORD_REPEAT_HINT %></p>
+            <fieldset class="auth-field" data-group="role" aria-describedby="role-error">
+              <legend><%= authText.ROLE %></legend>
+              <div class="role-options">
+                <% [[auth.ROLES.BUYER, authText.BUYER, authText.BUYER_DESCRIPTION, '↗'], [auth.ROLES.SELLER, authText.SELLER, authText.SELLER_DESCRIPTION, '↻']].forEach(([role, label, description, icon]) => { %>
+                  <label class="role-card"><input type="radio" name="role" value="<%= role %>" required <%= values.role === role ? 'checked' : '' %> aria-describedby="role-error"><span class="role-icon" aria-hidden="true"><%= icon %></span><span><strong><%= label %></strong><small><%= description %></small></span></label>
+                <% }) %>
+              </div>
+              <p class="field-error" id="role-error" data-error-for="role" aria-live="polite"><%= errors.role || '' %></p>
+            </fieldset>
+            <div class="auth-field">
+              <label for="cityId"><%= authText.CITY %></label>
+              <select id="cityId" name="cityId" required aria-invalid="<%= Boolean(errors.cityId) %>" aria-describedby="cityId-error">
+                <option value=""><%= authText.CITY_PLACEHOLDER %></option>
+                <% cities.forEach((city) => { %><option value="<%= city.id %>" <%= values.cityId === String(city.id) ? 'selected' : '' %>><%= city.name %></option><% }) %>
+              </select>
+              <p class="field-error" id="cityId-error" data-error-for="cityId" aria-live="polite"><%= errors.cityId || '' %></p>
+            </div>
+            <div class="interests-panel">
+              <p class="interest-hint"><%= authText.INTEREST_HINT %></p>
+              <% [['genreIds', authText.GENRES, genres], ['languageIds', authText.LANGUAGES, languages]].forEach(([name, label, options]) => { %>
+                <fieldset class="auth-field interest-field" data-group="<%= name %>" aria-describedby="<%= name %>-error">
+                  <legend><%= label %></legend>
+                  <div class="interest-options"><% options.forEach((option) => { %><label class="interest-chip"><input type="checkbox" name="<%= name %>" value="<%= option.id %>" <%= values[name].includes(String(option.id)) ? 'checked' : '' %> aria-describedby="<%= name %>-error"><span><%= option.name %></span></label><% }) %></div>
+                  <p class="field-error" id="<%= name %>-error" data-error-for="<%= name %>" aria-live="polite"><%= errors[name] || '' %></p>
+                </fieldset>
+              <% }) %>
+            </div>
+          <% } %>
+          <button class="auth-submit" type="submit"><span data-submit-label><%= page === 'register' ? authText.REGISTER_BUTTON : authText.LOGIN_BUTTON %></span><span aria-hidden="true">↗</span></button>
+          <% if (page === 'login') { %><p class="auth-security"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><%= authText.LOGIN_NOTICE %></p><% } %>
+        </form>
+        <p class="auth-switch"><%= page === 'register' ? authText.HAS_ACCOUNT : authText.NO_ACCOUNT %> <a href="<%= page === 'register' ? auth.PATHS.LOGIN : auth.PATHS.REGISTER %>"><%= page === 'register' ? authText.LOGIN_LINK : authText.REGISTER_LINK %></a></p>
+      </div>
+      <p class="auth-bottom"><%= authText.FOOTER %></p>
+    </main>
+  </div>
+</body>
+</html>

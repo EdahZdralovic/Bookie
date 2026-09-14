@@ -1,0 +1,50 @@
+{
+  "name": "bookie-book-exchange",
+  "version": "1.0.0",
+  "description": "College book exchange built with Express, EJS, Tailwind CSS, and Prisma.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "concurrently -n SERVER,TAILWIND -c blue,magenta \"npm:dev:server\" \"npm:dev:css\"",
+    "dev:server": "nodemon src/server.js",
+    "dev:css": "tailwindcss -c tailwind.config.js -i ../frontend/src/styles/input.css -o ../frontend/public/css/styles.css --watch",
+    "start": "node src/server.js",
+    "build:css": "tailwindcss -c tailwind.config.js -i ../frontend/src/styles/input.css -o ../frontend/public/css/styles.css --minify",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed",
+    "db:local:start": "node scripts/db-local.js start",
+    "db:local:stop": "node scripts/db-local.js stop",
+    "db:local:status": "node scripts/db-local.js status",
+    "db:deploy": "prisma migrate deploy",
+    "db:validate": "prisma validate",
+    "db:status": "prisma migrate status",
+    "test:db": "node --test tests/database.test.js",
+    "test:browser": "node tests/browser-auth.js",
+    "auth:setup": "node scripts/auth-setup.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.4.2",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "concurrently": "^10.0.5",
+    "nodemon": "^3.1.14",
+    "prisma": "^6.19.0",
+    "supertest": "^7.2.2",
+    "tailwindcss": "^3.4.17"
+  }
+}

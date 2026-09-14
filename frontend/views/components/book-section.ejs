@@ -1,0 +1,17 @@
+<section class="mt-20" id="<%= sectionId || '' %>">
+  <div class="flex items-end justify-between gap-5">
+    <div>
+      <p class="text-xs font-black uppercase tracking-[0.2em] text-brand-600"><%= eyebrow %></p>
+      <h2 class="mt-2 text-3xl font-black tracking-tight text-ink sm:text-4xl"><%= heading %></h2>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-ink/55"><%= description %></p>
+    </div>
+    <a href="#" class="hidden shrink-0 text-sm font-bold text-ink underline decoration-brand-500 decoration-2 underline-offset-4 sm:block">Pogledaj sve</a>
+  </div>
+  <% if (books.length) { %>
+    <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <% books.forEach((book) => { %><%- include('./book-card', { book }) %><% }) %>
+    </div>
+  <% } else { %>
+    <div class="mt-8 rounded-3xl border border-dashed border-ink/20 bg-white p-10 text-center text-ink/50">Nema knjiga koje odgovaraju pretrazi.</div>
+  <% } %>
+</section>
