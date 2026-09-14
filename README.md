@@ -5,8 +5,9 @@ A college book exchange starter built with Node.js, Express, EJS, Tailwind CSS 3
 ## Implementation status
 
 The current app implements the homepage, basic catalog search, JWT login, registration,
-logout and a protected account page. Most marketplace workflows still need their
-services, routes and screens. See [authentication setup and validation](docs/authentication.md).
+logout, profile updates, seller book publishing and a protected account page. Most
+marketplace workflows still need their services, routes and screens. See [authentication
+setup and validation](docs/authentication.md) and [database setup](docs/database.md).
 
 See [the requirements audit and implementation plan](docs/implementation-plan.md)
 for folder responsibilities and the backend-first checklist. The PostgreSQL database
@@ -29,34 +30,37 @@ npm run dev
 Open <http://localhost:3000>, [login](http://localhost:3000/login) or
 [registration](http://localhost:3000/register).
 
+Shared document metadata is rendered through `frontend/views/index.ejs`. Add the favicon at
+`frontend/public/images/bookie/favicon` and it will be available on every page.
+
 The local database uses PostgreSQL on `127.0.0.1:55432`. See the
 [database setup and complete 33-table inventory](docs/database.md) for relationships,
 constraints, migrations, demo fixtures and `npm run test:db`. The old SQLite database
 is preserved; its schema and migrations are archived in `backend/prisma/legacy-sqlite`.
 
-## Demo nalozi
+## Demo accounts
 
-| Uloga | Email | Lozinka |
+| Role | Email | Password |
 |---|---|---|
 | Administrator | `admin@bookie.ba` | `admin123` |
-| Prodavač | `prodavac@bookie.ba` | `student123` |
-| Kupac | `student@bookie.test` | `student123` |
+| Seller | `prodavac@bookie.ba` | `student123` |
+| Buyer | `student@bookie.test` | `student123` |
 
-Administrator se kreira isključivo kroz `prisma/seed.js`, a ne kroz javnu registraciju.
+The administrator is created only through `prisma/seed.js`, never through public registration.
 
-## Moduli baze
+## Database modules
 
-Prisma shema pokriva korisnike i sesije, lookup katalog, knjige i lokacije preuzimanja,
-interese kupaca, korpu, narudžbe i razmjene, recenzije, chat, notifikacije, prijave,
-wishlist alarme, sigurna pickup mjesta i značke prodavača.
+The Prisma schema covers users and sessions, lookup catalogs, books and pickup locations,
+buyer interests, carts, orders and exchanges, reviews, chat, notifications, reports,
+wishlist alerts, safe pickup points and seller badges.
 
-## Pet originalnih specifikacija
+## Five original features
 
-1. **Ekološki učinak** — prikaz procijenjenog broja spašenih knjiga i uštede kroz kupovinu polovnih izdanja.
-2. **Pametni prijedlog cijene** — prijedlog cijene prema stanju, godini i sličnim oglasima.
-3. **Wishlist alarmi** — obavijest kada se pojavi traženi naslov, autor, ISBN, žanr ili jezik.
-4. **Sigurna campus pickup mjesta** — administrativno odobrene biblioteke, fakulteti i studentski domovi.
-5. **Značke pouzdanosti** — značke prodavača prema ocjenama, brzini odgovora i završenim narudžbama.
+1. **Environmental impact** — show the estimated number of books reused and the savings from buying used editions.
+2. **Smart price suggestion** — suggest a price based on condition, year and similar listings.
+3. **Wishlist alerts** — notify users when a requested title, author, ISBN, genre or language appears.
+4. **Safe campus pickup points** — administrator-approved libraries, faculties and student residences.
+5. **Reliability badges** — seller badges based on ratings, response speed and completed orders.
 
 ## Main folders
 

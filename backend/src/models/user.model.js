@@ -6,6 +6,8 @@ function toPublicUser(user) {
     name: `${user.firstName} ${user.lastName}`,
     email: user.email,
     role: user.role,
+    status: user.status,
+    avatarUrl: user.avatarUrl,
     city: user.city ? { id: user.city.id, name: user.city.name } : null,
   };
 }

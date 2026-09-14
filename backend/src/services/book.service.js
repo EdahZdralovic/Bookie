@@ -3,10 +3,11 @@ const catalogRepository = require('../repositories/catalog.repository');
 const statisticsRepository = require('../repositories/statistics.repository');
 const { toPublicBook } = require('../models/book.model');
 
-async function getLandingData(search = '') {
-  const [activeBooks, genres, marketplaceCounts] = await Promise.all([
-    bookRepository.findActiveBooks(search),
+async function getLandingData(search = '', filters = {}) {
+  const [activeBooks, genres, languages, marketplaceCounts] = await Promise.all([
+    bookRepository.findActiveBooks(search, filters),
     catalogRepository.findActiveGenres(),
+    catalogRepository.findActiveLanguages(),
     statisticsRepository.getMarketplaceCounts(),
   ]);
 
@@ -25,10 +26,17 @@ async function getLandingData(search = '') {
     popularBooks,
     randomBooks,
     recommendedBooks,
-    genres,
+    genres, languages, filters,
     search,
     stats: { activeBooks: normalized.length, ...marketplaceCounts },
   };
 }
 
-module.exports = { getLandingData };
+async function getCatalogData(search = '', filters = {}) {
+  const [books, genres, languages] = await Promise.all([bookRepository.findActiveBooks(search, filters), catalogRepository.findActiveGenres(), catalogRepository.findActiveLanguages()]);
+  const statistics = await bookRepository.findStatisticsByBookIds(books.map((book) => book.id));
+  const byId = new Map(statistics.map((row) => [row.bookId, row]));
+  return { books: books.map((book) => toPublicBook(book, byId.get(book.id))), genres, languages, search, filters };
+}
+
+module.exports = { getLandingData, getCatalogData };

@@ -1,6 +1,6 @@
-<header class="sticky top-0 z-50 border-b border-ink/10 bg-paper/90 backdrop-blur-xl">
+<% if (!suppressShell) { %><header class="sticky top-0 z-50 border-b border-ink/10 bg-paper/90 backdrop-blur-xl">
   <nav class="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-    <a href="/" class="group flex items-center gap-3" aria-label="Bookie naslovna">
+    <a href="/" class="group flex items-center gap-3" aria-label="Bookie home">
       <span class="grid h-10 w-10 place-items-center rounded-xl bg-ink text-paper transition group-hover:-rotate-6">
         <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
       </span>
@@ -8,14 +8,18 @@
     </a>
 
     <div class="hidden items-center gap-8 text-sm font-semibold text-ink/70 md:flex">
-      <a href="#knjige" class="transition hover:text-ink">Istraži knjige</a>
-      <a href="#kako-radi" class="transition hover:text-ink">Kako radi</a>
-      <a href="#kategorije" class="transition hover:text-ink">Kategorije</a>
+      <a href="/books" class="transition hover:text-ink">Explore books</a>
+      <a href="#how-it-works" class="transition hover:text-ink">How it works</a>
+      <a href="#categories" class="transition hover:text-ink">Categories</a>
     </div>
 
     <div class="flex items-center gap-2 sm:gap-3">
       <% if (currentUser) { %>
         <a href="<%= auth.PATHS.ACCOUNT %>" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"><%= currentUser.firstName %></a>
+        <a href="/profile" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"><%= strings.COMMON.PROFILE %></a>
+        <a href="/chat/list" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Messages</a>
+        <% if (currentUser.role === 'ADMIN') { %><a href="/statistics" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Statistics</a><% } %>
+        <% if (currentUser.role === 'SELLER') { %><a href="/books/new" class="rounded-xl bg-brand-500 px-3 py-2 text-sm font-bold text-white"><%= strings.COMMON.ADD_BOOK %></a><% } %>
         <form action="<%= auth.PATHS.LOGOUT %>" method="post">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <button class="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white"><%= authText.LOGOUT %></button>
@@ -26,4 +30,4 @@
       <% } %>
     </div>
   </nav>
-</header>
+</header><% } %>

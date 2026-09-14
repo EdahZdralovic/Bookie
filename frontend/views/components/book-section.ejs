@@ -5,13 +5,13 @@
       <h2 class="mt-2 text-3xl font-black tracking-tight text-ink sm:text-4xl"><%= heading %></h2>
       <p class="mt-2 max-w-2xl text-sm leading-6 text-ink/55"><%= description %></p>
     </div>
-    <a href="#" class="hidden shrink-0 text-sm font-bold text-ink underline decoration-brand-500 decoration-2 underline-offset-4 sm:block">Pogledaj sve</a>
+    <a href="/books" class="hidden shrink-0 text-sm font-bold text-ink underline decoration-brand-500 decoration-2 underline-offset-4 sm:block">View all</a>
   </div>
   <% if (books.length) { %>
     <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
       <% books.forEach((book) => { %><%- include('./book-card', { book }) %><% }) %>
     </div>
   <% } else { %>
-    <div class="mt-8 rounded-3xl border border-dashed border-ink/20 bg-white p-10 text-center text-ink/50">Nema knjiga koje odgovaraju pretrazi.</div>
+    <div class="mt-8 rounded-3xl border border-dashed border-ink/20 bg-white p-10 text-center text-ink/50">No books match your search.</div>
   <% } %>
 </section>

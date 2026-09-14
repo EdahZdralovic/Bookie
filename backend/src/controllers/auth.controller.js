@@ -50,7 +50,7 @@ async function logout(req, res) {
 }
 
 function account(req, res) {
-  return res.render('pages/account', { title: TEXT.ACCOUNT_TITLE });
+  return res.render('pages/account', { title: TEXT.ACCOUNT_TITLE, bookCreated: req.query.bookCreated === '1' });
 }
 
 function me(req, res) {

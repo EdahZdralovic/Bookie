@@ -1,4 +1,3 @@
-// A project-owned development cluster. Does not modify Homebrew services.
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
@@ -48,7 +47,6 @@ function main() {
   }
   const status = spawnSync(executable('pg_ctl'), ['status', '-D', data]);
   if (status.status !== 0) {
-    // Socket path is quoted for PostgreSQL's option parser (workspace paths may contain spaces).
     if (socket.includes('"')) throw new Error('The workspace path must not contain double quotes.');
     console.log(run('pg_ctl', ['start', '-D', data, '-l', path.join(local, 'postgres.log'),
       '-o', `-h 127.0.0.1 -p ${port} -k "${socket}"`, '-w']));

@@ -304,8 +304,6 @@ model ExchangeOfferBook {
   @@index([bookId])
 }
 
-// The reviewed book, buyer and seller are obtained through OrderItem -> Order.
-// Keeping one source of truth prevents a review pointing at another buyer/book.
 model Review {
   id            Int       @id @default(autoincrement())
   rating        Int
@@ -517,8 +515,6 @@ enum ReportStatus {
   REJECTED
 }
 
-// One row per physical book prevents two orders reserving the same copy.
-// Services create/delete all reservations in the order transition transaction.
 model BookReservation {
   bookId     Int      @id
   orderId    Int
@@ -544,7 +540,6 @@ model OrderStatusHistory {
   @@index([changedById])
 }
 
-// A match is stored once; linking its notification enables deduplicated alerts.
 model WishlistMatch {
   wishlistAlertId Int
   bookId          Int
