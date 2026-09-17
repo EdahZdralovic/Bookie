@@ -110,22 +110,42 @@ async function register(data) {
 }
 
 async function verifyEmail(email, code) {
+  if (typeof email !== 'string' || typeof code !== 'string' || !/^\d{6}$/.test(code))
+    throw new AppException('EMAIL_VERIFICATION_INVALID', HTTP.UNPROCESSABLE);
+  email = email.trim().toLowerCase();
   const user = await userRepository.findByEmail(email);
   if (
     !user ||
     user.emailVerifiedAt ||
     user.verificationCodeHash !== hashCode(code) ||
+    !user.verificationCodeExpiresAt ||
     user.verificationCodeExpiresAt < new Date()
   )
     throw new AppException('EMAIL_VERIFICATION_INVALID', HTTP.UNPROCESSABLE);
-  await userRepository.update(user.id, {
-    emailVerifiedAt: new Date(),
-    verificationCodeHash: null,
-    verificationCodeExpiresAt: null,
+  await requireActiveAccount(user);
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.user.updateMany({
+      where: {
+        id: user.id,
+        status: AUTH.ACCOUNT_STATUS.ACTIVE,
+        emailVerifiedAt: null,
+        verificationCodeHash: hashCode(code),
+        verificationCodeExpiresAt: { gt: new Date() },
+      },
+      data: {
+        emailVerifiedAt: new Date(),
+        verificationCodeHash: null,
+        verificationCodeExpiresAt: null,
+      },
+    });
+    if (updated.count !== 1)
+      throw new AppException('EMAIL_VERIFICATION_INVALID', HTTP.UNPROCESSABLE);
+    return issueSession(await userRepository.findById(user.id, tx), tx);
   });
-  return issueSession(await userRepository.findById(user.id));
 }
 async function resendVerification(email) {
+  if (typeof email !== 'string') throw new AppException('BAD_REQUEST', HTTP.BAD_REQUEST);
+  email = email.trim().toLowerCase();
   const user = await userRepository.findByEmail(email);
   if (!user || user.emailVerifiedAt) return { retryAfter: 0 };
   const now = Date.now();

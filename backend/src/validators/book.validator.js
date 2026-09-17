@@ -3,7 +3,8 @@ const HTTP = require('../constants/http');
 const AppException = require('../exceptions/app.exception');
 
 const value = (input) => (typeof input === 'string' ? input.trim() : '');
-const id = (input) => /^\d+$/.test(value(input)) && Number(input) > 0;
+const id = (input) =>
+  /^\d+$/.test(value(input)) && Number(input) > 0 && Number(input) <= 2147483647;
 const url = (input) => {
   const candidate = value(input);
   if (candidate.startsWith('/users/')) return true;
@@ -42,7 +43,11 @@ function validateBook(body = {}) {
     data.publicationYear > new Date().getFullYear()
   )
     errors.publicationYear = EXCEPTIONS.BOOK_YEAR_INVALID;
-  if (!/^\d+(\.\d{1,2})?$/.test(data.price) || Number(data.price) < 0)
+  if (
+    !/^\d+(\.\d{1,2})?$/.test(data.price) ||
+    Number(data.price) < 0 ||
+    Number(data.price) > 99999999.99
+  )
     errors.price = EXCEPTIONS.BOOK_PRICE_INVALID;
   if (Number(data.price) === 0 && !data.allowExchange)
     errors.price = EXCEPTIONS.BOOK_PRICE_EXCHANGE;

@@ -18,7 +18,10 @@ async function findOwnedBook(userId, bookId, db = prisma) {
   });
 }
 async function updateOwnedBook(userId, bookId, data, db = prisma) {
-  return db.book.update({ where: { id: bookId }, data });
+  return db.book.update({
+    where: { id: bookId, ownerId: userId, status: { in: ['ACTIVE', 'ARCHIVED'] } },
+    data,
+  });
 }
 async function archiveOwnedBook(userId, bookId, db = prisma) {
   return db.book.updateMany({

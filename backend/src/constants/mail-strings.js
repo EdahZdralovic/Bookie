@@ -1,4 +1,7 @@
 module.exports = Object.freeze({
+  OFFER_SUBJECT: 'New Bookie exchange offer',
+  OFFER_INTRO:
+    'A reader would like to exchange books with you. Open your exchange offers to accept or reject.',
   ORDER_SUBJECT: 'New Bookie order',
   ORDER_INTRO: 'A buyer wants to purchase the following book(s) from you:',
   BUYER_LABEL: 'Buyer',

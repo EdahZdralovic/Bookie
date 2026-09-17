@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title><!= seller.firstName !> <!= seller.lastName !> — Bookie</title>
+    <title><%= seller.firstName %> <%= seller.lastName %> — Bookie</title>
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/auth.css" />
   </head>
@@ -34,9 +34,12 @@
           </p>
         </div>
       </section>
+      <% if (currentUser?.id !== seller.id) { %>
       <div class="profile-actions">
+        <a class="secondary-action" href="/report?userId=<%= seller.id %>"><%= community.REPORT %></a>
         <a class="secondary-action" href="/chat/new?userId=<%= seller.id %>">Open chat</a>
       </div>
+      <% } %>
       <section class="seller-books">
         <h2>Active books</h2>
         <div class="seller-book-list">

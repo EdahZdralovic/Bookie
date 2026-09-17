@@ -4,6 +4,8 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { chromium } = require('@playwright/test');
 require('dotenv').config({ quiet: true });
+process.env.RESEND_API_KEY = '';
+process.env.RESEND_FROM_EMAIL = '';
 const { PrismaClient } = require('@prisma/client');
 
 const root = path.resolve(__dirname, '..');
@@ -52,6 +54,7 @@ async function main() {
     await page.locator('#firstName-error').textContent(),
     require('../src/constants/exceptions').REQUIRED_FIELD,
   );
+  await page.locator('#phone').fill('+38761000000');
   await page.locator('#firstName').fill('Browser');
   await page.locator('#lastName').fill('Reader');
   await page.locator('#email').fill('browser-reader@example.test');
@@ -90,7 +93,7 @@ async function main() {
   await page.getByRole('button', { name: 'Log in', exact: true }).click();
   await page.waitForSelector('[data-form-alert]:not([hidden])');
   assert.equal(
-    await page.locator('[data-form-message]').textContent(),
+    (await page.locator('[data-form-message]').textContent()).trim(),
     require('../src/constants/exceptions').INVALID_CREDENTIALS,
   );
   assert.equal(await page.locator('#password').inputValue(), '');
@@ -135,7 +138,7 @@ async function main() {
   assert.match(await sellerPage.locator('h1').textContent(), /Give your book/);
   await sellerPage.locator('.workflow-form button[type="submit"]').click();
   assert.equal(
-    await sellerPage.locator('#title + .field-error').textContent(),
+    (await sellerPage.locator('#title + .field-error').textContent()).trim(),
     require('../src/constants/exceptions').BOOK_TITLE_REQUIRED,
   );
   await sellerPage.locator('#title').fill('Browser Book');
@@ -153,10 +156,65 @@ async function main() {
   await sellerPage.locator('.workflow-form button[type="submit"]').click();
   await sellerPage.waitForURL(`${base}/account?bookCreated=1`, { timeout: 5000 });
   assert.match(await sellerPage.locator('[role="status"]').textContent(), /successfully/);
-  await sellerPage.goto(`${base}/profile`);
-  assert.equal(await sellerPage.locator('input[name="avatarUrl"]').count(), 1);
+  await sellerPage.goto(`${base}/profile?edit=1`);
+  assert.equal(await sellerPage.locator('input[name="avatar"]').count(), 1);
+  await sellerPage.locator('#phone').fill('+38761234567');
+  await sellerPage.locator('form[action="/profile"][method="post"] button[type="submit"]').click();
+  await sellerPage.waitForURL(`${base}/profile?saved=1`);
+  for (const width of [390, 768, 1024, 1440]) {
+    await sellerPage.setViewportSize({ width, height: 900 });
+    await sellerPage.goto(`${base}/books`);
+    assert.ok(
+      await sellerPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      `Catalog overflow at ${width}`,
+    );
+    const toggle = sellerPage.locator('[data-menu-open]');
+    assert.equal(await toggle.isVisible(), width < 1280);
+    if (width < 1280) {
+      await toggle.click();
+      const bounds = await sellerPage.locator('#mobile-menu').boundingBox();
+      assert.ok(bounds.height >= 899);
+      await sellerPage.locator('.mobile-menu-close').click();
+    }
+  }
+  await sellerPage.goto(`${base}/profile?edit=1`);
+  const previousAvatar = await db.user.findUnique({ where: { email: 'prodavac@bookie.ba' } });
+  await sellerPage.locator('input[name="avatar"]').setInputFiles({
+    name: 'avatar.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a/YQAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
+  await sellerPage.locator('form[action="/profile"][method="post"] button[type="submit"]').click();
+  await sellerPage.waitForURL(`${base}/profile?saved=1`);
+  const withAvatar = await db.user.findUnique({ where: { email: 'prodavac@bookie.ba' } });
+  assert.match(withAvatar.avatarUrl, /^\/users\/profile-pictures\/[a-f0-9]{32}\.png$/);
+  assert.notEqual(withAvatar.avatarUrl, previousAvatar.avatarUrl);
+  fs.unlinkSync(path.join(root, '../frontend/public', withAvatar.avatarUrl));
   await sellerPage.close();
   await seller.close();
+  const adminContext = await browser.newContext();
+  const adminPage = await adminContext.newPage();
+  adminPage.on('pageerror', (error) => errors.push(error.message));
+  await adminPage.goto(`${base}/login`);
+  await adminPage.locator('#email').fill('admin@bookie.ba');
+  await adminPage.locator('#password').fill('admin123');
+  await adminPage.getByRole('button', { name: 'Log in', exact: true }).click();
+  await adminPage.waitForURL(`${base}/account`);
+  for (const width of [390, 768, 1440]) {
+    await adminPage.setViewportSize({ width, height: 900 });
+    await adminPage.goto(`${base}/statistics`);
+    await adminPage.waitForFunction(
+      () => typeof Chart !== 'undefined' && Chart.getChart('genreChart'),
+    );
+    assert.ok(
+      await adminPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      `Statistics overflow at ${width}`,
+    );
+  }
+  await adminContext.close();
   assert.deepEqual(errors, []);
   console.log(
     'Browser checks passed: desktop/mobile layouts, client validation, registration, JWT cookie, login/logout, server errors, and login without JavaScript.',

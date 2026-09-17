@@ -30,7 +30,11 @@ app.use((req, res, next) => {
   res.render = (view, data = {}, callback) => {
     if (view === 'index') return renderView(view, data, callback);
     const useShell = [
+      'pages/notifications',
+      'pages/report',
       'pages/home',
+      'pages/chat',
+      'pages/chat-list',
       'pages/account',
       'pages/book-create',
       'pages/profile',
@@ -60,15 +64,20 @@ app.use((req, res, next) => {
 });
 
 app.disable('x-powered-by');
+app.locals.community = require('./constants/community');
 app.locals.auth = AUTH;
 app.locals.authText = TEXT;
 app.locals.exceptions = EXCEPTIONS;
 app.locals.strings = STRINGS;
 app.locals.currentUser = null;
 app.locals.csrfToken = '';
+app.locals.formError = '';
 app.locals.suppressShell = false;
 app.use(express.urlencoded({ extended: false, limit: '16kb', parameterLimit: 150 }));
 app.use(express.json({ limit: '16kb' }));
+app.get('/vendor/chart.js', (req, res) => {
+  res.sendFile(path.join(path.dirname(require.resolve('chart.js')), 'chart.umd.js'));
+});
 app.use(express.static(path.join(frontendPath, 'public')));
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -81,6 +90,7 @@ app.use(cookieParser());
 app.use(authenticate);
 app.use(provideCsrf);
 
+app.use(require('./routes/community.routes'));
 app.use(authRoutes);
 app.use(bookRoutes);
 app.use(profileRoutes);

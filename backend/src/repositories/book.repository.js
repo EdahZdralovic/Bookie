@@ -17,7 +17,7 @@ async function findActiveBooks(search = '', filters = {}, db = prisma) {
       ...(filters.genreId ? { genreId: filters.genreId } : {}),
       ...(filters.languageId ? { languageId: filters.languageId } : {}),
       ...(filters.conditionId ? { conditionId: filters.conditionId } : {}),
-      ...(filters.cityId ? { owner: { cityId: filters.cityId } } : {}),
+      owner: { status: 'ACTIVE', ...(filters.cityId ? { cityId: filters.cityId } : {}) },
       ...(filters.exchangeOnly ? { allowExchange: true } : {}),
       ...(filters.minPrice !== undefined || filters.maxPrice !== undefined
         ? {
@@ -29,10 +29,10 @@ async function findActiveBooks(search = '', filters = {}, db = prisma) {
         : {}),
       ...(search && {
         OR: [
-          { title: { contains: search } },
-          { author: { contains: search } },
-          { isbn: { contains: search } },
-          { genre: { name: { contains: search } } },
+          { title: { contains: search, mode: 'insensitive' } },
+          { author: { contains: search, mode: 'insensitive' } },
+          { isbn: { contains: search, mode: 'insensitive' } },
+          { genre: { name: { contains: search, mode: 'insensitive' } } },
         ],
       }),
     },

@@ -1,7 +1,7 @@
 const prisma = require('../config/database');
 
 async function getMarketplaceCounts(db = prisma) {
-  const activeUsers = { status: 'ACTIVE' };
+  const activeUsers = {};
   const [
     userCount,
     sellerCount,
@@ -22,7 +22,11 @@ async function getMarketplaceCounts(db = prisma) {
     db.book.count({ where: { status: 'ACTIVE' } }),
     db.order.count({ where: { status: 'COMPLETED' } }),
     db.user.count({ where: { ...activeUsers, role: 'SELLER' } }),
-    db.book.groupBy({ by: ['ownerId'], _count: { _all: true } }),
+    db.book.groupBy({
+      by: ['ownerId'],
+      where: { owner: { role: 'SELLER' } },
+      _count: { _all: true },
+    }),
     db.book.groupBy({
       by: ['genreId'],
       where: { status: { not: 'ARCHIVED' } },
@@ -38,7 +42,12 @@ async function getMarketplaceCounts(db = prisma) {
     }),
     db.order.findMany({
       where: { status: 'COMPLETED' },
-      select: { type: true, completedAt: true, createdAt: true },
+      select: {
+        type: true,
+        completedAt: true,
+        createdAt: true,
+        _count: { select: { items: true } },
+      },
       orderBy: { createdAt: 'asc' },
     }),
   ]);
@@ -76,7 +85,7 @@ async function getMarketplaceCounts(db = prisma) {
   completedOrders.forEach((order) => {
     const date = order.completedAt || order.createdAt;
     const month = monthMap.get(`${date.getUTCFullYear()}-${date.getUTCMonth()}`);
-    if (month) month[order.type === 'EXCHANGE' ? 'exchanged' : 'sold'] += 1;
+    if (month) month[order.type === 'EXCHANGE' ? 'exchanged' : 'sold'] += order._count.items;
   });
   return {
     userCount,

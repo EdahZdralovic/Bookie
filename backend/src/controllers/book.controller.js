@@ -28,7 +28,7 @@ async function create(req, res) {
       req.body.price = '0';
       req.body.allowExchange = 'on';
     }
-    if (req.file) req.body.imageUrl = `/users/books-images/${req.file.filename}`;
+    req.body.imageUrl = req.file ? `/users/books-images/${req.file.filename}` : '';
     await bookService.createBook(req.user, validator.validateBook(req.body));
     return res.redirect(
       HTTP.REDIRECT,
@@ -77,7 +77,7 @@ async function update(req, res, next) {
     if (req.file) req.body.imageUrl = `/users/books-images/${req.file.filename}`;
     else req.body.imageUrl = book.imageUrl || null;
     await bookService.updateBook(req.user, Number(req.params.id), validator.validateBook(req.body));
-    return res.redirect(HTTP.REDIRECT, '/profile?saved=1');
+    return res.redirect(HTTP.REDIRECT, '/profile/books');
   } catch (error) {
     await removeUploadedFile(req.file);
     if (!(error instanceof AppException)) return next(error);
@@ -91,7 +91,7 @@ async function update(req, res, next) {
 async function archive(req, res, next) {
   try {
     await bookService.archiveBook(req.user.id, Number(req.params.id));
-    return res.redirect(HTTP.REDIRECT, '/profile?saved=1');
+    return res.redirect(HTTP.REDIRECT, '/profile/books');
   } catch (error) {
     return next(error);
   }
@@ -99,7 +99,7 @@ async function archive(req, res, next) {
 async function remove(req, res, next) {
   try {
     await bookService.deleteBook(req.user.id, Number(req.params.id));
-    return res.redirect(HTTP.REDIRECT, '/profile?saved=1');
+    return res.redirect(HTTP.REDIRECT, '/profile/books');
   } catch (error) {
     return next(error);
   }

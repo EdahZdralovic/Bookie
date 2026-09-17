@@ -1,4 +1,7 @@
 module.exports = Object.freeze({
+  RECORD_IN_USE: 'This record is used by an order or another record and cannot be deleted.',
+  MESSAGE_INVALID: 'Enter a message between 1 and 5000 characters.',
+  CHAT_FORBIDDEN: 'You cannot access this conversation.',
   VALIDATION_FAILED: 'Check the marked fields and try again.',
   REQUIRED_FIELD: 'This field is required.',
   INVALID_NAME: 'Enter a name using letters, spaces, hyphens or apostrophes.',

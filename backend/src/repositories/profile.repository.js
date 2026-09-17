@@ -46,13 +46,11 @@ function findOwnedBooks(userId, db = prisma) {
 }
 async function findPublicSeller(userId, db = prisma) {
   return db.user.findFirst({
-    where: { id: userId, role: 'SELLER', status: 'ACTIVE' },
+    where: { id: userId, role: { in: ['SELLER', 'BUYER'] }, status: 'ACTIVE' },
     select: {
       id: true,
       firstName: true,
       lastName: true,
-      email: true,
-      phone: true,
       avatarUrl: true,
       bio: true,
       city: true,
@@ -79,7 +77,15 @@ function findExchangeBook(userId, bookId, db = prisma) {
   return db.book.findFirst({ where: { id: bookId, ownerId: userId, allowExchange: true } });
 }
 function updateBook(userId, bookId, data, db = prisma) {
-  return db.book.updateMany({ where: { id: bookId, ownerId: userId, allowExchange: true }, data });
+  return db.book.updateMany({
+    where: {
+      id: bookId,
+      ownerId: userId,
+      allowExchange: true,
+      status: { in: ['ACTIVE', 'ARCHIVED'] },
+    },
+    data,
+  });
 }
 function deleteBook(userId, bookId, db = prisma) {
   return db.book.deleteMany({
@@ -91,7 +97,7 @@ async function updateProfile(userId, data, db = prisma) {
   await db.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: userId },
-      data: { avatarUrl: data.avatarUrl, phone: data.phone },
+      data: { avatarUrl: data.avatarUrl, phone: data.phone, cityId: data.cityId, bio: data.bio },
     });
     await tx.userGenreInterest.deleteMany({ where: { userId } });
     await tx.userLanguageInterest.deleteMany({ where: { userId } });

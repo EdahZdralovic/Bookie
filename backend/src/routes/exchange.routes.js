@@ -3,6 +3,8 @@ const controller = require('../controllers/exchange.controller');
 const { requireAuthentication } = require('../middleware/authorize.middleware');
 const { protectCsrf } = require('../middleware/csrf.middleware');
 const router = express.Router();
+for (const name of ['id', 'bookId', 'itemId'])
+  router.param(name, require('../middleware/id.middleware'));
 router.get('/exchange-books', requireAuthentication, controller.inventory);
 router.get('/exchange-books/:id/edit', requireAuthentication, controller.editForm);
 router.post('/exchange-books/:id/edit', requireAuthentication, protectCsrf, controller.edit);

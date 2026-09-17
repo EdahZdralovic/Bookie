@@ -6,6 +6,8 @@ const { protectCsrf } = require('../middleware/csrf.middleware');
 const { bookUpload } = require('../middleware/upload.middleware');
 
 const router = express.Router();
+for (const name of ['id', 'bookId', 'itemId'])
+  router.param(name, require('../middleware/id.middleware'));
 router.get(
   '/books/new',
   requireAuthentication,

@@ -31,6 +31,8 @@ async function renderProfile(req, res, error = null) {
       : {
           avatarUrl: profile.avatarUrl || '',
           phone: profile.phone || '',
+          cityId: profile.cityId,
+          bio: profile.bio || '',
           genreIds: profile.genreInterests.map((item) => String(item.genreId)),
           languageIds: profile.languageInterests.map((item) => String(item.languageId)),
         };
@@ -72,8 +74,15 @@ async function publicProfile(req, res, next) {
 
 async function update(req, res) {
   try {
+    const { profile } = await profileService.getProfile(req.user.id);
+    req.body.avatarUrl = profile.avatarUrl || '';
+    req.body.cityId ??= String(profile.cityId || '');
+    req.body.bio ??= profile.bio || '';
     if (req.file) req.body.avatarUrl = `/users/profile-pictures/${req.file.filename}`;
-    await profileService.updateProfile(req.user.id, validator.validateProfile(req.body));
+    await profileService.updateProfile(
+      req.user.id,
+      validator.validateProfile(req.body, req.user.role),
+    );
     return res.redirect(HTTP.REDIRECT, '/profile?saved=1');
   } catch (error) {
     await removeUploadedFile(req.file);
@@ -82,4 +91,17 @@ async function update(req, res) {
   }
 }
 
-module.exports = { show, books, publicProfile, update, renderProfile };
+async function changePassword(req, res) {
+  try {
+    await profileService.changePassword(req.user.id, req.body);
+    const config = require('../config/auth');
+    res.clearCookie(config.tokenCookie, config.cookieOptions);
+    res.clearCookie(config.csrfCookie, config.cookieOptions);
+    return res.redirect(HTTP.REDIRECT, '/login');
+  } catch (error) {
+    if (!(error instanceof AppException)) throw error;
+    req.body = {};
+    return renderProfile(req, res, error);
+  }
+}
+module.exports = { changePassword, show, books, publicProfile, update, renderProfile };

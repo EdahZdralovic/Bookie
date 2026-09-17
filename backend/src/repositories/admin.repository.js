@@ -12,8 +12,8 @@ function listUsers({ search = '', role, status } = {}) {
   return prisma.user.findMany({
     where: {
       role: role && ['BUYER', 'SELLER'].includes(role) ? role : { in: ['BUYER', 'SELLER'] },
-      ...(status ? { status } : {}),
-      ...(search
+      ...(['ACTIVE', 'INACTIVE', 'BLOCKED', 'ARCHIVED'].includes(status) ? { status } : {}),
+      ...(typeof search === 'string' && search
         ? {
             OR: [
               { firstName: { contains: search, mode: 'insensitive' } },
@@ -40,7 +40,15 @@ function listUsers({ search = '', role, status } = {}) {
 }
 
 async function updateUser(id, data) {
-  return prisma.user.update({ where: { id }, data });
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.update({ where: { id }, data });
+    if (data.status && data.status !== 'ACTIVE')
+      await tx.session.updateMany({
+        where: { userId: id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    return user;
+  });
 }
 async function listCatalog(type) {
   const model = catalogModels[type];
@@ -55,9 +63,12 @@ async function updateCatalog(type, id, data) {
   const model = catalogModels[type];
   return prisma[model].update({ where: { id }, data });
 }
+async function deleteCatalog(type, id) {
+  return prisma[catalogModels[type]].delete({ where: { id } });
+}
 async function listReports(status) {
   return prisma.report.findMany({
-    where: status ? { status } : {},
+    where: ['OPEN', 'IN_REVIEW', 'RESOLVED', 'REJECTED'].includes(status) ? { status } : {},
     include: {
       reporter: { select: { id: true, firstName: true, lastName: true, email: true } },
       reportedUser: { select: { id: true, firstName: true, lastName: true, email: true } },
@@ -75,7 +86,7 @@ async function createNotification(data) {
 }
 async function listReviews(rating) {
   return prisma.review.findMany({
-    where: rating ? { rating: Number(rating) } : {},
+    where: /^[1-5]$/.test(String(rating)) ? { rating: Number(rating) } : {},
     include: {
       orderItem: {
         include: {
@@ -99,6 +110,7 @@ module.exports = {
   listCatalog,
   createCatalog,
   updateCatalog,
+  deleteCatalog,
   listReports,
   resolveReport,
   createNotification,

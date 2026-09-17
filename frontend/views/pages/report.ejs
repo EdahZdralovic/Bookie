@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title><%= title %> — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <h1><%= community.REPORT %></h1>
+      <% if (sent) { %>
+        <p class="success-alert" role="status"><%= community.REPORT_SENT %></p>
+      <% } else { %>
+        <% if (formError) { %>
+          <p class="form-alert" role="alert"><%= formError %></p>
+        <% } %>
+        <form class="workflow-form" method="post" action="/report">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="bookId" value="<%= values.bookId || '' %>" />
+          <input type="hidden" name="userId" value="<%= values.userId || '' %>" />
+          <div class="auth-field">
+            <label for="reason"><%= community.REASON %></label>
+            <textarea id="reason" name="reason" required maxlength="2000"><%= values.reason || '' %></textarea>
+          </div>
+          <button class="auth-submit" type="submit"><%= community.SEND_REPORT %></button>
+        </form>
+      <% } %>
+    </main>
+  </body>
+</html>

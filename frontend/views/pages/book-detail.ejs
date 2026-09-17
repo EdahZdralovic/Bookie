@@ -52,7 +52,7 @@
             <span>Exchange available</span>
             <% } %>
           </div>
-          <% if (currentUser && currentUser.id !== book.owner.id) { %>
+          <% if (currentUser && currentUser.id !== book.owner.id && book.status === 'ACTIVE') { %>
           <div class="detail-actions">
             <% if (book.price > 0) { %>
             <form method="post" action="/cart/<%= book.id %>">
@@ -72,7 +72,7 @@
           <% } %>
         </div>
       </section>
-      <% if (currentUser && currentUser.role === 'BUYER' && currentUser.id !== book.owner.id && book.allowExchange && book.buyerBooks.length) { %>
+      <% if (currentUser && currentUser.role === 'BUYER' && currentUser.id !== book.owner.id && book.status === 'ACTIVE' && book.allowExchange && book.buyerBooks.length) { %>
       <section class="workflow-form exchange-panel">
         <h2>Offer a book in exchange</h2>
         <p class="field-hint">Choose your active exchange books.</p>
@@ -121,6 +121,9 @@
           <p><%= book.owner.city?.name || 'Location not specified' %></p>
         </div>
       </section>
+      <% if (currentUser && currentUser.id !== book.owner.id) { %>
+        <a class="secondary-action" href="/report?bookId=<%= book.id %>"><%= community.REPORT %></a>
+      <% } %>
       <section class="reviews-section">
         <h2>
           Reviews <span>(<%= book.reviews.length %>)</span>

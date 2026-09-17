@@ -20,6 +20,8 @@ async function updateProfile(userId, input) {
   const valid = (items, ids) => ids.every((id) => items.some((item) => item.id === id));
   if (!valid(options.genres, input.genreIds) || !valid(options.languages, input.languageIds))
     throw new AppException('INVALID_INTERESTS', HTTP.UNPROCESSABLE);
+  if (input.cityId !== undefined && !options.cities.some((city) => city.id === input.cityId))
+    throw new AppException('INVALID_CITY', HTTP.UNPROCESSABLE, { cityId: EXCEPTIONS.INVALID_CITY });
   return profileRepository.updateProfile(userId, input);
 }
 async function exchangeBooks(userId) {
@@ -45,10 +47,10 @@ async function publicSeller(userId) {
   };
 }
 async function archiveExchangeBook(userId, bookId) {
-  return profileRepository.updateBook(userId, bookId, { status: 'ARCHIVED' });
+  return require('./book-write.service').archiveBook(userId, bookId);
 }
 async function deleteArchivedExchangeBook(userId, bookId) {
-  return profileRepository.deleteBook(userId, bookId);
+  return require('./book-write.service').deleteBook(userId, bookId);
 }
 async function getExchangeBook(userId, bookId) {
   return profileRepository.findExchangeBook(userId, bookId);
@@ -66,8 +68,44 @@ async function editExchangeBook(userId, bookId, data) {
   return result;
 }
 
+async function changePassword(userId, input) {
+  const bcrypt = require('bcryptjs');
+  const AUTH = require('../constants/auth');
+  const prisma = require('../config/database');
+  const password = typeof input.password === 'string' ? input.password : '';
+  const currentPassword = typeof input.currentPassword === 'string' ? input.currentPassword : '';
+  const fields = {};
+  if (!currentPassword || Buffer.byteLength(currentPassword) > AUTH.PASSWORD.MAX_BYTES)
+    fields.currentPassword = EXCEPTIONS.INVALID_CREDENTIALS;
+  if (
+    password.length < AUTH.PASSWORD.MIN_LENGTH ||
+    !/\p{Lu}/u.test(password) ||
+    !/[0-9]/.test(password)
+  )
+    fields.password = EXCEPTIONS.WEAK_PASSWORD;
+  if (Buffer.byteLength(password) > AUTH.PASSWORD.MAX_BYTES)
+    fields.password = EXCEPTIONS.PASSWORD_TOO_LONG;
+  if (password !== input.repeatPassword) fields.repeatPassword = EXCEPTIONS.PASSWORD_MISMATCH;
+  if (Object.keys(fields).length)
+    throw new AppException('VALIDATION_FAILED', HTTP.UNPROCESSABLE, fields);
+  const user = await profileRepository.findProfile(userId);
+  if (!(await bcrypt.compare(currentPassword, user.passwordHash)))
+    throw new AppException('INVALID_CREDENTIALS', HTTP.UNPROCESSABLE, {
+      currentPassword: EXCEPTIONS.INVALID_CREDENTIALS,
+    });
+  const passwordHash = await bcrypt.hash(password, AUTH.PASSWORD.HASH_ROUNDS);
+  return prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: userId }, data: { passwordHash } });
+    await tx.session.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  });
+}
+
 module.exports = {
   getProfile,
+  changePassword,
   updateProfile,
   exchangeBooks,
   ownedBooks,

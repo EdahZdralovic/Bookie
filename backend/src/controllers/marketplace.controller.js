@@ -1,8 +1,12 @@
 const service = require('../services/marketplace.service');
 const AppException = require('../exceptions/app.exception');
-async function cart(req, res, next) {
+async function cart(req, res, next, error = null) {
   try {
-    return res.render('pages/cart', { title: 'Cart', cart: await service.cart(req.user.id) });
+    return res.status(error?.status || 200).render('pages/cart', {
+      title: 'Cart',
+      cart: await service.cart(req.user.id),
+      formError: error?.message || '',
+    });
   } catch (e) {
     return next(e);
   }
@@ -12,6 +16,7 @@ async function add(req, res, next) {
     await service.add(req.user.id, Number(req.params.bookId));
     return res.redirect('/cart');
   } catch (e) {
+    if (e instanceof AppException) return cart(req, res, next, e);
     return next(e);
   }
 }
@@ -20,6 +25,7 @@ async function remove(req, res, next) {
     await service.remove(req.user.id, Number(req.params.bookId));
     return res.redirect('/cart');
   } catch (e) {
+    if (e instanceof AppException) return cart(req, res, next, e);
     return next(e);
   }
 }
@@ -28,12 +34,14 @@ async function checkout(req, res, next) {
     await service.checkout(req.user.id);
     return res.redirect('/orders');
   } catch (e) {
+    if (e instanceof AppException) return cart(req, res, next, e);
     return next(e);
   }
 }
-async function orders(req, res, next) {
+async function orders(req, res, next, error = null) {
   try {
-    return res.render('pages/orders', {
+    return res.status(error?.status || 200).render('pages/orders', {
+      formError: error?.message || '',
       title: 'Orders',
       orders: await service.orders(req.user.id, req.user.role),
     });
@@ -48,6 +56,7 @@ async function changeOrder(req, res, next) {
     await service.notifyExchangeStatus(orderId, req.body.status);
     return res.redirect('/orders');
   } catch (e) {
+    if (e instanceof AppException) return orders(req, res, next, e);
     return next(e);
   }
 }
@@ -72,8 +81,9 @@ async function review(req, res, next) {
       Number(req.body.rating),
       req.body.comment,
     );
-    return res.redirect('back');
+    return res.redirect(303, '/orders');
   } catch (e) {
+    if (e instanceof AppException) return orders(req, res, next, e);
     return next(e);
   }
 }
@@ -85,16 +95,18 @@ async function editReview(req, res, next) {
       Number(req.body.rating),
       req.body.comment,
     );
-    return res.redirect('back');
+    return res.redirect(303, '/orders');
   } catch (e) {
+    if (e instanceof AppException) return orders(req, res, next, e);
     return next(e);
   }
 }
 async function deleteReview(req, res, next) {
   try {
     await service.deleteReview(req.user.id, Number(req.params.id));
-    return res.redirect('back');
+    return res.redirect(303, '/orders');
   } catch (e) {
+    if (e instanceof AppException) return orders(req, res, next, e);
     return next(e);
   }
 }

@@ -10,9 +10,19 @@ function normalizeException(error) {
   if (error instanceof AppException) return error;
   if (error.type === 'entity.too.large')
     return new AppException('PAYLOAD_TOO_LARGE', HTTP.PAYLOAD_TOO_LARGE);
-  if (['LIMIT_FILE_SIZE', 'LIMIT_UNEXPECTED_FILE', 'LIMIT_FILE_COUNT'].includes(error.code))
+  if (
+    [
+      'LIMIT_FILE_SIZE',
+      'LIMIT_UNEXPECTED_FILE',
+      'LIMIT_FILE_COUNT',
+      'LIMIT_FIELD_VALUE',
+      'LIMIT_FIELD_COUNT',
+    ].includes(error.code)
+  )
     return new AppException('UPLOAD_INVALID', HTTP.UNPROCESSABLE);
   if (error.status === HTTP.BAD_REQUEST) return new AppException('BAD_REQUEST', HTTP.BAD_REQUEST);
+  if (error.code === 'P2025') return new AppException('NOT_FOUND', HTTP.NOT_FOUND);
+  if (error.code === 'P2003') return new AppException('RECORD_IN_USE', HTTP.CONFLICT);
   if (error.code === 'P2002') return new AppException('DUPLICATE_CATALOG', HTTP.CONFLICT);
   if (
     ['P1001', 'P1002', 'P1008', 'P1017', 'P2024'].includes(error.code) ||

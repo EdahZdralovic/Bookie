@@ -1630,10 +1630,12 @@
   flex-direction: column;
   background: #fffdf8;
   box-shadow: -12px 0 30px rgba(15, 23, 42, 0.15);
+  visibility: hidden;
   transform: translateX(100%);
   transition: transform 0.25s ease;
 }
 .mobile-menu.is-open {
+  visibility: visible;
   transform: translateX(0);
 }
 body.menu-open .mobile-menu-backdrop {
@@ -1691,7 +1693,7 @@ body.menu-open {
   color: #fff;
   text-align: center;
 }
-@media (min-width: 768px) {
+@media (min-width: 1280px) {
   .mobile-menu-toggle {
     display: none !important;
   }
@@ -1728,5 +1730,33 @@ body.menu-open {
   }
   .book-row-actions {
     width: 100%;
+  }
+}
+
+.seller-book-row form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+.seller-book-row form button {
+  padding: 0.65rem 1rem;
+  border: 1px solid #d8ddd7;
+  border-radius: 0.75rem;
+  font-weight: 700;
+}
+.seller-book-row > * {
+  min-width: 0;
+}
+.seller-book-info {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .seller-book-row form {
+    width: 100%;
+  }
+  .seller-book-row form input,
+  .seller-book-row form select {
+    max-width: 100%;
   }
 }

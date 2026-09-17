@@ -11,7 +11,6 @@ async function seedDatabase(client = prisma) {
   const adminPasswordHash = await bcrypt.hash('admin123', 12);
   return client.$transaction(
     async (db) => {
-      // Serialize repeat seed runs; never overwrite edited accounts or marketplace records.
       await db.$executeRaw`SELECT pg_advisory_xact_lock(20260914)`;
       const upsert = (model, where, create) => db[model].upsert({ where, create, update: {} });
       const cities = {};
@@ -82,6 +81,8 @@ async function seedDatabase(client = prisma) {
             role,
             cityId: cities[city].id,
             passwordHash,
+            phone: '+38761000000',
+            emailVerifiedAt: new Date(),
             ...extra,
           },
         );
@@ -246,7 +247,6 @@ async function seedDatabase(client = prisma) {
           secondSeller,
           'Mostar',
         ],
-        // Another physical copy can have the same ISBN; publicId identifies the listing.
         [
           'sold-clean-code',
           '9780132350884',
@@ -452,7 +452,6 @@ async function seedDatabase(client = prisma) {
           statusHistory: { create: { toStatus: 'PENDING', changedById: buyer.id } },
         },
       );
-      // Stable lookup under the advisory lock keeps these fixtures idempotent.
       async function conversation(subject, members, sender, body, orderId, bookId) {
         const existing = await db.conversation.findFirst({
           where: { subject, orderId: orderId ?? null },
@@ -466,7 +465,6 @@ async function seedDatabase(client = prisma) {
             ...(bookId && { books: { create: { bookId } } }),
           },
         });
-        // Participants must exist before the composite sender foreign key is checked.
         await db.message.create({ data: { conversationId: result.id, senderId: sender.id, body } });
         return result;
       }

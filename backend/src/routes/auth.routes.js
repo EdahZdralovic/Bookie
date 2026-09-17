@@ -6,6 +6,8 @@ const { loginLimiter, registerLimiter } = require('../middleware/rate-limit.midd
 const { PATHS } = require('../constants/auth');
 
 const router = express.Router();
+for (const name of ['id', 'bookId', 'itemId'])
+  router.param(name, require('../middleware/id.middleware'));
 
 router.get(PATHS.LOGIN, guestOnly, controller.formContext('login'), (req, res) =>
   controller.renderForm(req, res),
@@ -30,8 +32,14 @@ router.post(
   controller.register,
 );
 router.get('/verify-email', guestOnly, controller.verificationForm);
-router.post('/verify-email', guestOnly, protectCsrf, controller.verifyEmail);
-router.post('/verify-email/resend', guestOnly, protectCsrf, controller.resendVerification);
+router.post('/verify-email', guestOnly, loginLimiter, protectCsrf, controller.verifyEmail);
+router.post(
+  '/verify-email/resend',
+  guestOnly,
+  loginLimiter,
+  protectCsrf,
+  controller.resendVerification,
+);
 router.post(PATHS.LOGOUT, protectCsrf, controller.logout);
 router.get(PATHS.ACCOUNT, requireAuthentication, controller.account);
 router.get(PATHS.ME, requireAuthentication, controller.me);

@@ -10,13 +10,19 @@
   <body class="account-body">
     <main class="form-page">
       <h1>Orders</h1>
+      <% if (formError) { %>
+        <p class="form-alert" role="alert"><%= formError %></p>
+      <% } %>
+
       <div class="seller-book-list">
         <% orders.forEach((order) => { %>
         <article class="seller-book-row">
           <div class="seller-book-info">
-            <strong>
-              <%= order.orderNumber %>
-            </strong>
+            <strong><%= order.orderNumber %></strong>
+            <% order.items.forEach((item) => { %>
+              <a href="/books/<%= item.bookId %>"><%= item.bookTitle %></a>
+            <% }) %>
+            <a href="/chat/new?userId=<%= currentUser.id === order.buyerId ? order.sellerId : order.buyerId %>"><%= strings.WORKFLOW.MESSAGE %></a>
             <span>
               <%= order.items.length %>
               item(s) ·
@@ -28,35 +34,39 @@
           <strong>
             <%= Number(order.totalAmount).toFixed(2) %>
             BAM</strong>
-          <% if (currentUser.role === 'SELLER' && order.status === 'PENDING') { %>
+          <% if (currentUser.id === order.sellerId && order.status === 'PENDING') { %>
           <form method="post" action="/orders/<%= order.id %>/status">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <button name="status" value="ACCEPTED">Accept</button>
             <button name="status" value="REJECTED">Reject</button>
           </form>
-          <% } else if (currentUser.role === 'SELLER' && order.status === 'ACCEPTED') { %>
+          <% } else if (currentUser.id === order.sellerId && order.status === 'ACCEPTED') { %>
           <form method="post" action="/orders/<%= order.id %>/status">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <button name="status" value="COMPLETED">Complete</button>
           </form>
-          <% } else if (currentUser.role === 'BUYER' && order.status === 'PENDING') { %>
+          <% } else if (currentUser.id === order.buyerId && order.status === 'PENDING') { %>
           <form method="post" action="/orders/<%= order.id %>/status">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <button name="status" value="CANCELLED">Cancel</button>
           </form>
           <% } %>
-          <% if (currentUser.role === 'BUYER' && order.status === 'COMPLETED') {
-          order.items.forEach((item) => { %>
-          <form method="post" action="/reviews/<%= item.id %>">
+          <% if (currentUser.id === order.buyerId && order.status === 'COMPLETED') {
+          order.items.filter((item) => !item.review || item.review.editableUntil > new Date()).forEach((item) => { %>
+          <form class="workflow-form" method="post" action="/reviews/<%= item.review ? item.review.id + '/edit' : item.id %>">
+            <strong><%= item.bookTitle %></strong>
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <select name="rating" required>
               <option value="">Rating</option>
               <% [1,2,3,4,5].forEach((rating) => { %>
-              <option value="<%= rating %>"><%= rating %>/5</option>
+              <option value="<%= rating %>" <%= item.review?.rating === rating ? 'selected' : '' %>><%= rating %>/5</option>
               <% }) %>
             </select>
-            <input name="comment" placeholder="Comment" />
-            <button type="submit">Review</button>
+            <input name="comment" placeholder="Comment" value="<%= item.review?.comment || '' %>" maxlength="5000" />
+            <button class="filter-button" type="submit"><%= item.review ? strings.WORKFLOW.EDIT_REVIEW : strings.WORKFLOW.REVIEW %></button>
+            <% if (item.review) { %>
+              <button class="filter-button" type="submit" formaction="/reviews/<%= item.review.id %>/delete" formnovalidate><%= strings.WORKFLOW.DELETE_REVIEW %></button>
+            <% } %>
           </form>
           <% }) } %>
         </article>

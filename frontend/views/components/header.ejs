@@ -14,8 +14,8 @@
         >bookie<span class="text-brand-500">.</span>
       </span>
     </a>
-    <div class="hidden items-center gap-8 text-sm font-semibold text-ink/70 md:flex"></div>
-    <div class="desktop-nav-actions hidden items-center gap-2 sm:gap-3 md:flex">
+    <div class="hidden items-center gap-8 text-sm font-semibold text-ink/70 xl:flex"></div>
+    <div class="desktop-nav-actions hidden items-center gap-2 sm:gap-3 xl:flex">
       <% if (currentUser) { %>
       <a href="<%= auth.PATHS.ACCOUNT %>" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">
         <%= currentUser.firstName %>
@@ -24,10 +24,12 @@
         <%= strings.COMMON.PROFILE %>
       </a>
       <a href="/chat/list" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Messages</a>
+      <a href="/notifications" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"><%= community.NOTIFICATIONS %></a>
+      <a href="/orders" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"><%= strings.WORKFLOW.ORDERS %></a>
       <a href="/cart" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Cart</a>
       <a href="/exchange-books" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"
         >My exchange books</a>
-      <% if (currentUser.role === 'SELLER') { %>
+      <% if (['SELLER', 'BUYER'].includes(currentUser.role)) { %>
       <a href="/exchange-offers" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"
         >Exchange offers</a>
       <% } %>
@@ -36,7 +38,7 @@
       <a href="/statistics" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Statistics</a>
       <a href="/admin/reviews" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Reviews</a>
       <% } %>
-      <% if (currentUser.role === 'SELLER') { %>
+      <% if (['SELLER', 'BUYER'].includes(currentUser.role)) { %>
       <a href="/books/new" class="rounded-xl bg-brand-500 px-3 py-2 text-sm font-bold text-white">
         <%= strings.COMMON.ADD_BOOK %>
       </a>
@@ -63,7 +65,7 @@
       <% } %>
     </div>
     <button
-      class="mobile-menu-toggle md:hidden"
+      class="mobile-menu-toggle xl:hidden"
       type="button"
       data-menu-open
       aria-controls="mobile-menu"
@@ -75,8 +77,9 @@
       <span></span>
     </button>
   </nav>
+</header>
   <div class="mobile-menu-backdrop" data-menu-close></div>
-  <aside id="mobile-menu" class="mobile-menu" aria-hidden="true">
+  <aside id="mobile-menu" class="mobile-menu" aria-hidden="true" inert>
     <div class="mobile-menu-header">
       <span class="text-xl font-black">Menu</span>
       <button
@@ -93,9 +96,11 @@
       <a href="<%= auth.PATHS.ACCOUNT %>"> <%= currentUser.firstName %> </a>
       <a href="/profile"> <%= strings.COMMON.PROFILE %> </a>
       <a href="/chat/list">Messages</a>
+      <a href="/notifications" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"><%= community.NOTIFICATIONS %></a>
+      <a href="/orders" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"><%= strings.WORKFLOW.ORDERS %></a>
       <a href="/cart">Cart</a>
       <a href="/exchange-books">My exchange books</a>
-      <% if (currentUser.role === 'SELLER') { %>
+      <% if (['SELLER', 'BUYER'].includes(currentUser.role)) { %>
       <a href="/exchange-offers">Exchange offers</a>
       <a class="mobile-menu-primary" href="/books/new"> <%= strings.COMMON.ADD_BOOK %> </a>
       <% } %>
@@ -116,5 +121,4 @@
       <% } %>
     </div>
   </aside>
-</header>
 <% } %>

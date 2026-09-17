@@ -22,6 +22,10 @@
             <%= other ? `${other.firstName} ${other.lastName}` : 'Conversation' %>
           </strong>
           <p><%= last?.body || 'No messages yet.' %></p>
+          <% const participant = conversation.participants.find((item) => item.userId === currentUser.id); %>
+          <% if (last && last.senderId !== currentUser.id && (!participant.lastReadAt || last.createdAt > participant.lastReadAt)) { %>
+            <span class="auth-step"><%= strings.WORKFLOW.UNREAD %></span>
+          <% } %>
         </a>
         <% }) %>
         <% if (!conversations.length) { %>

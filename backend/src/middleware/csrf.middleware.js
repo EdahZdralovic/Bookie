@@ -39,7 +39,7 @@ function provideCsrf(req, res, next) {
   return next();
 }
 
-function protectCsrf(req, res, next) {
+async function protectCsrf(req, res, next) {
   const submitted = req.body?._csrf || req.get('x-csrf-token');
   const cookie = req.cookies[config.csrfCookie];
   if (
@@ -48,6 +48,7 @@ function protectCsrf(req, res, next) {
     !/^[a-f0-9]{64}\.[a-f0-9]{64}$/.test(submitted) ||
     !equal(cookie, submitted)
   ) {
+    await require('../utils/upload').removeUploadedFile(req.file);
     return next(new AppException('CSRF_INVALID', HTTP.FORBIDDEN));
   }
   return next();

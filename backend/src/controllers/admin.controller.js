@@ -54,6 +54,10 @@ async function editCatalog(req, res, next) {
     return next(error);
   }
 }
+async function deleteCatalog(req, res) {
+  await adminService.deleteCatalog(req.params.type, Number(req.params.id));
+  return res.redirect(HTTP.REDIRECT, `/admin/catalog/${req.params.type}`);
+}
 async function reports(req, res, next) {
   try {
     return res.render('pages/admin-reports', {
@@ -106,6 +110,7 @@ module.exports = {
   catalog,
   addCatalog,
   editCatalog,
+  deleteCatalog,
   reports,
   resolveReport,
   notify,

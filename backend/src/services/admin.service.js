@@ -1,6 +1,7 @@
 const adminRepository = require('../repositories/admin.repository');
 const AppException = require('../exceptions/app.exception');
 const HTTP = require('../constants/http');
+const EXCEPTIONS = require('../constants/exceptions');
 
 async function users(filters) {
   return adminRepository.listUsers(filters);
@@ -16,14 +17,18 @@ async function changeUserStatus(adminId, userId, status, blockedUntil = null) {
   });
 }
 async function catalog(type) {
-  if (!adminRepository.catalogModels[type]) throw new AppException('NOT_FOUND', HTTP.NOT_FOUND);
+  if (!Object.hasOwn(adminRepository.catalogModels, type))
+    throw new AppException('NOT_FOUND', HTTP.NOT_FOUND);
   return adminRepository.listCatalog(type);
 }
 async function addCatalog(type, input) {
-  if (!adminRepository.catalogModels[type]) throw new AppException('NOT_FOUND', HTTP.NOT_FOUND);
+  if (!Object.hasOwn(adminRepository.catalogModels, type))
+    throw new AppException('NOT_FOUND', HTTP.NOT_FOUND);
   const name = String(input.name || '').trim();
   if (!name)
-    throw new AppException('REQUIRED_FIELD', HTTP.UNPROCESSABLE, { name: 'Name is required.' });
+    throw new AppException('REQUIRED_FIELD', HTTP.UNPROCESSABLE, {
+      name: EXCEPTIONS.REQUIRED_FIELD,
+    });
   const slug = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -37,9 +42,13 @@ async function addCatalog(type, input) {
   return adminRepository.createCatalog(type, data);
 }
 async function editCatalog(type, id, input) {
+  if (!Object.hasOwn(adminRepository.catalogModels, type))
+    throw new AppException('NOT_FOUND', HTTP.NOT_FOUND);
   const name = String(input.name || '').trim();
   if (!name)
-    throw new AppException('REQUIRED_FIELD', HTTP.UNPROCESSABLE, { name: 'Name is required.' });
+    throw new AppException('REQUIRED_FIELD', HTTP.UNPROCESSABLE, {
+      name: EXCEPTIONS.REQUIRED_FIELD,
+    });
   const slug = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -47,9 +56,14 @@ async function editCatalog(type, id, input) {
   const data = {
     name,
     ...(['genres', 'conditions', 'tags'].includes(type) ? { slug } : {}),
-    ...(input.isActive !== undefined ? { isActive: input.isActive === 'on' } : {}),
+    isActive: input.isActive === 'on',
   };
   return adminRepository.updateCatalog(type, id, data);
+}
+async function deleteCatalog(type, id) {
+  if (!Object.hasOwn(adminRepository.catalogModels, type))
+    throw new AppException('NOT_FOUND', HTTP.NOT_FOUND);
+  return adminRepository.deleteCatalog(type, id);
 }
 async function reports(status) {
   return adminRepository.listReports(status);
@@ -59,8 +73,8 @@ async function resolveReport(adminId, id, status) {
     throw new AppException('BAD_REQUEST', HTTP.BAD_REQUEST);
   return adminRepository.resolveReport(id, {
     status,
-    resolvedById: adminId,
-    resolvedAt: status === 'RESOLVED' ? new Date() : null,
+    resolvedById: ['RESOLVED', 'REJECTED'].includes(status) ? adminId : null,
+    resolvedAt: ['RESOLVED', 'REJECTED'].includes(status) ? new Date() : null,
   });
 }
 async function notify(userId, title, body, link) {
@@ -88,6 +102,7 @@ module.exports = {
   catalog,
   addCatalog,
   editCatalog,
+  deleteCatalog,
   reports,
   resolveReport,
   notify,

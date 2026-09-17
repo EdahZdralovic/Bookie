@@ -4,6 +4,8 @@ const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
 require('dotenv').config({ quiet: true });
+process.env.RESEND_API_KEY = '';
+process.env.RESEND_FROM_EMAIL = '';
 const { PrismaClient, Prisma } = require('@prisma/client');
 
 const root = path.resolve(__dirname, '..');
@@ -434,6 +436,7 @@ async function registrationData() {
     db.language.findFirstOrThrow(),
   ]);
   return {
+    phone: '+38761000000',
     firstName: 'Test',
     lastName: 'Reader',
     email: `reader-${Date.now()}@example.test`,
@@ -476,6 +479,7 @@ test('registration reports all missing fields on the server', async () => {
       'firstName',
       'lastName',
       'email',
+      'phone',
       'password',
       'repeatPassword',
       'role',
@@ -817,4 +821,348 @@ test('production auth cookies are secure and missing secrets fail explicitly', (
       stdio: 'pipe',
     }),
   );
+});
+
+test('public and authenticated pages render without errors or chat redirect loops', async () => {
+  for (const url of [
+    '/',
+    '/books',
+    '/login',
+    '/register',
+    '/verify-email?email=test@example.test',
+    '/books/' + fixtures.book.id,
+    '/users/' + fixtures.seller.id,
+  ]) {
+    await request(app).get(url).expect(200);
+  }
+  const { agent } = await loggedInAgent();
+  for (const url of [
+    '/profile',
+    '/profile?edit=1',
+    '/profile/books',
+    '/cart',
+    '/orders',
+    '/exchange-books',
+    '/exchange-offers',
+    '/chat',
+    '/chat/list',
+    '/notifications',
+    '/report?bookId=' + fixtures.book.id,
+    '/books/new',
+  ]) {
+    await agent.get(url).expect(200);
+  }
+  await agent.get('/admin').expect(403);
+  await agent.get('/statistics').expect(403);
+  await agent.get('/books/invalid').expect(404);
+  const { agent: adminAgent, csrf } = await authAgent();
+  await adminAgent
+    .post('/login')
+    .type('form')
+    .send({
+      email: fixtures.admin.email,
+      password: 'admin123',
+      _csrf: csrf,
+    })
+    .expect(303);
+  for (const url of [
+    '/admin',
+    '/statistics',
+    '/admin/catalog/genres',
+    '/admin/catalog/languages',
+    '/admin/catalog/cities',
+    '/admin/catalog/conditions',
+    '/admin/catalog/tags',
+    '/admin/reports',
+    '/admin/reviews',
+  ])
+    await adminAgent.get(url).expect(200);
+});
+
+async function freshBook(ownerId, price = 10) {
+  return db.book.create({
+    data: {
+      title: 'Regression book',
+      author: 'Test Author',
+      publisher: 'Test Publisher',
+      description: 'A book used for workflow regression tests.',
+      publicationYear: 2020,
+      price,
+      allowExchange: true,
+      ownerId,
+      genreId: fixtures.book.genreId,
+      languageId: fixtures.book.languageId,
+      conditionId: fixtures.book.conditionId,
+    },
+  });
+}
+
+test('cart additions are idempotent and exchange-only books cannot be purchased', async () => {
+  const service = require('../src/services/marketplace.service');
+  const book = await freshBook(fixtures.seller.id);
+  await service.add(fixtures.buyer.id, book.id);
+  await service.add(fixtures.buyer.id, book.id);
+  const cart = await service.cart(fixtures.buyer.id);
+  assert.equal(cart.items.filter((item) => item.bookId === book.id).length, 1);
+  const exchangeOnly = await freshBook(fixtures.seller.id, 0);
+  await assert.rejects(
+    service.add(fixtures.buyer.id, exchangeOnly.id),
+    (error) => error.code === 'CART_BOOK_INVALID',
+  );
+  await service.remove(fixtures.buyer.id, book.id);
+  await service.remove(fixtures.buyer.id, book.id);
+});
+
+test('exchange offer creates an order and completes both sides of the exchange', async () => {
+  const service = require('../src/services/marketplace.service');
+  const target = await freshBook(fixtures.seller.id);
+  const offered = await freshBook(fixtures.buyer.id, 0);
+  const order = await service.exchange(fixtures.buyer.id, fixtures.seller.id, target.id, [
+    offered.id,
+  ]);
+  assert.ok(order.orderNumber);
+  await service.changeOrder(fixtures.seller.id, order.id, 'ACCEPTED');
+  assert.equal(await db.bookReservation.count({ where: { orderId: order.id } }), 2);
+  await service.changeOrder(fixtures.seller.id, order.id, 'COMPLETED');
+  assert.equal(
+    await db.book.count({
+      where: { id: { in: [target.id, offered.id] }, status: 'EXCHANGED' },
+    }),
+    2,
+  );
+  assert.equal(await db.bookReservation.count({ where: { orderId: order.id } }), 0);
+  await assert.rejects(service.changeOrder(fixtures.seller.id, order.id, 'COMPLETED'));
+});
+
+test('competing offers cannot reserve the same book twice', async () => {
+  const service = require('../src/services/marketplace.service');
+  const target = await freshBook(fixtures.seller.id);
+  const first = await freshBook(fixtures.buyer.id, 0);
+  const second = await freshBook(fixtures.buyer.id, 0);
+  const a = await service.exchange(fixtures.buyer.id, fixtures.seller.id, target.id, [first.id]);
+  const b = await service.exchange(fixtures.buyer.id, fixtures.seller.id, target.id, [second.id]);
+  const outcomes = await Promise.allSettled([
+    service.changeOrder(fixtures.seller.id, a.id, 'ACCEPTED'),
+    service.changeOrder(fixtures.seller.id, b.id, 'ACCEPTED'),
+  ]);
+  assert.equal(outcomes.filter((result) => result.status === 'fulfilled').length, 1);
+  assert.equal(
+    await db.order.count({ where: { id: { in: [a.id, b.id] }, status: 'ACCEPTED' } }),
+    1,
+  );
+});
+
+test('chat rejects nonparticipants, reuses conversations and stores read state', async () => {
+  const chat = require('../src/repositories/chat.repository');
+  const conversation = await chat.create(fixtures.buyer.id, fixtures.seller.id, fixtures.book.id);
+  assert.equal(
+    (await chat.create(fixtures.buyer.id, fixtures.seller.id, fixtures.book.id)).id,
+    conversation.id,
+  );
+  await assert.rejects(
+    chat.addMessage(conversation.id, fixtures.admin.id, 'Not allowed'),
+    (error) => error.code === 'CHAT_FORBIDDEN',
+  );
+  const message = await chat.addMessage(conversation.id, fixtures.buyer.id, 'Hello');
+  await chat.markRead(conversation.id, fixtures.seller.id, message.createdAt);
+  const data = await chat.findForUser(conversation.id, fixtures.seller.id);
+  assert.ok(data.participants.find((item) => item.userId === fixtures.seller.id).lastReadAt);
+});
+
+test('invalid review edits do not change the saved rating', async () => {
+  const service = require('../src/services/marketplace.service');
+  const item = await db.orderItem.findFirst({
+    where: { order: { buyerId: fixtures.buyer.id, status: 'COMPLETED' }, review: { isNot: null } },
+    include: { review: true },
+  });
+  assert.ok(item);
+  await assert.rejects(
+    service.editReview(fixtures.buyer.id, item.review.id, 8, 'invalid'),
+    (error) => error.code === 'REVIEW_INVALID',
+  );
+  assert.equal(
+    (await db.review.findUnique({ where: { id: item.review.id } })).rating,
+    item.review.rating,
+  );
+});
+
+test('duplicate checkout requests produce only one order and clear purchased cart entries', async () => {
+  const service = require('../src/services/marketplace.service');
+  const cart = await service.cart(fixtures.buyer.id);
+  await db.cartItem.deleteMany({ where: { cartId: cart.id } });
+  const book = await freshBook(fixtures.seller.id);
+  await service.add(fixtures.buyer.id, book.id);
+  const outcomes = await Promise.allSettled([
+    service.checkout(fixtures.buyer.id),
+    service.checkout(fixtures.buyer.id),
+  ]);
+  assert.equal(outcomes.filter((item) => item.status === 'fulfilled').length, 1);
+  const order = await db.order.findFirstOrThrow({
+    where: { items: { some: { bookId: book.id } } },
+  });
+  assert.equal(await db.order.count({ where: { items: { some: { bookId: book.id } } } }), 1);
+  await service.changeOrder(fixtures.seller.id, order.id, 'ACCEPTED');
+  await service.changeOrder(fixtures.seller.id, order.id, 'COMPLETED');
+  assert.equal((await db.book.findUnique({ where: { id: book.id } })).status, 'SOLD');
+});
+
+test('reports support in-review, rejection and resolution; notifications are owner-scoped', async () => {
+  const community = require('../src/services/community.service');
+  const adminService = require('../src/services/admin.service');
+  const report = await community.report(fixtures.buyer.id, {
+    bookId: fixtures.book.id,
+    reason: 'Test report',
+  });
+  for (const status of ['IN_REVIEW', 'REJECTED', 'RESOLVED'])
+    await adminService.resolveReport(fixtures.admin.id, report.id, status);
+  const notice = await db.notification.create({
+    data: {
+      userId: fixtures.buyer.id,
+      type: 'SYSTEM',
+      title: 'Test notification',
+      body: 'Test body',
+    },
+  });
+  assert.equal((await community.markRead(fixtures.seller.id, notice.id)).count, 0);
+  assert.equal((await community.markRead(fixtures.buyer.id, notice.id)).count, 1);
+});
+
+test('saving a seller profile preserves its avatar and does not require buyer interests', async () => {
+  const { agent, csrf } = await authAgent();
+  await agent
+    .post('/login')
+    .type('form')
+    .send({
+      email: fixtures.seller.email,
+      password: 'student123',
+      _csrf: csrf,
+    })
+    .expect(303);
+  await db.user.update({
+    where: { id: fixtures.seller.id },
+    data: { avatarUrl: '/users/profile-pictures/test.jpg' },
+  });
+  const form = await agent.get('/profile?edit=1').expect(200);
+  await agent
+    .post('/profile')
+    .type('form')
+    .send({
+      _csrf: csrfFrom(form.text),
+      phone: '+38761123456',
+      cityId: fixtures.seller.cityId,
+      bio: 'Updated biography',
+    })
+    .expect(303);
+  const user = await db.user.findUnique({ where: { id: fixtures.seller.id } });
+  assert.equal(user.avatarUrl, '/users/profile-pictures/test.jpg');
+  assert.equal(user.bio, 'Updated biography');
+});
+
+test('email verification rejects malformed, expired and reused codes', async () => {
+  const service = require('../src/services/auth.service');
+  const { hashCode } = require('../src/utils/verification');
+  const data = await registrationData();
+  const user = await db.user.create({
+    data: {
+      firstName: 'Verify',
+      lastName: 'Reader',
+      email: data.email,
+      phone: data.phone,
+      passwordHash: fixtures.buyer.passwordHash,
+      role: 'BUYER',
+      verificationCodeHash: hashCode('123456'),
+      verificationCodeExpiresAt: new Date(Date.now() + 60000),
+    },
+  });
+  await assert.rejects(
+    service.verifyEmail(user.email, ['123456']),
+    (error) => error.code === 'EMAIL_VERIFICATION_INVALID',
+  );
+  await assert.rejects(
+    service.verifyEmail(user.email, '000000'),
+    (error) => error.code === 'EMAIL_VERIFICATION_INVALID',
+  );
+  const session = await service.verifyEmail(user.email, '123456');
+  assert.ok(session.token);
+  await assert.rejects(
+    service.verifyEmail(user.email, '123456'),
+    (error) => error.code === 'EMAIL_VERIFICATION_INVALID',
+  );
+});
+
+test('password changes validate the current password and revoke existing sessions', async () => {
+  const service = require('../src/services/profile.service');
+  const { agent } = await loggedInAgent();
+  const input = {
+    currentPassword: 'student123',
+    password: 'Updated123',
+    repeatPassword: 'Updated123',
+  };
+  await assert.rejects(
+    service.changePassword(fixtures.buyer.id, { ...input, currentPassword: 'Wrong123' }),
+  );
+  await assert.rejects(service.changePassword(fixtures.buyer.id, { ...input, password: 'weak' }));
+  await service.changePassword(fixtures.buyer.id, input);
+  await agent.get('/api/auth/me').expect(401);
+  assert.ok(
+    await require('bcryptjs').compare(
+      'Updated123',
+      (await db.user.findUnique({ where: { id: fixtures.buyer.id } })).passwordHash,
+    ),
+  );
+});
+
+test('resending verification replaces the previous code and enforces the cooldown', async (t) => {
+  const service = require('../src/services/auth.service');
+  const { hashCode } = require('../src/utils/verification');
+  const data = await registrationData();
+  const user = await db.user.create({
+    data: {
+      firstName: 'Resend',
+      lastName: 'Reader',
+      email: data.email,
+      phone: data.phone,
+      passwordHash: fixtures.buyer.passwordHash,
+      role: 'BUYER',
+      verificationCodeHash: hashCode('123456'),
+      verificationCodeExpiresAt: new Date(Date.now() + 60000),
+      verificationCodeSentAt: new Date(Date.now() - 30000),
+    },
+  });
+  const oldFetch = global.fetch;
+  const oldKey = process.env.RESEND_API_KEY;
+  const oldFrom = process.env.RESEND_FROM_EMAIL;
+  const messages = [];
+  global.fetch = async (url, options) => {
+    assert.equal(url, 'https://api.resend.com/emails');
+    messages.push(JSON.parse(options.body));
+    return { ok: true };
+  };
+  process.env.RESEND_API_KEY = 'test-only-placeholder';
+  process.env.RESEND_FROM_EMAIL = 'test@example.test';
+  t.after(() => {
+    global.fetch = oldFetch;
+    process.env.RESEND_API_KEY = oldKey;
+    process.env.RESEND_FROM_EMAIL = oldFrom;
+  });
+  await service.resendVerification(user.email);
+  assert.equal(messages.length, 1);
+  await service.resendVerification(user.email);
+  assert.equal(messages.length, 1);
+  const latest = messages[0].html.match(/>(\d{6})</)[1];
+  if (latest !== '123456') await assert.rejects(service.verifyEmail(user.email, '123456'));
+  await db.user.update({
+    where: { id: user.id },
+    data: { verificationCodeExpiresAt: new Date(Date.now() - 1000) },
+  });
+  await assert.rejects(service.verifyEmail(user.email, latest));
+});
+
+test('admin catalog deactivation and deletion respect referenced data', async () => {
+  const service = require('../src/services/admin.service');
+  const genre = await service.addCatalog('genres', { name: 'Regression genre' });
+  await service.editCatalog('genres', genre.id, { name: genre.name });
+  assert.equal((await db.genre.findUnique({ where: { id: genre.id } })).isActive, false);
+  await service.deleteCatalog('genres', genre.id);
+  await assert.rejects(service.deleteCatalog('genres', fixtures.book.genreId));
 });

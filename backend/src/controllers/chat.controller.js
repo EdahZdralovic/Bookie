@@ -22,9 +22,14 @@ async function open(req, res, next) {
           req.query.bookId ? Number(req.query.bookId) : null,
         )
       ).id;
-    if (!id) return res.redirect(HTTP.REDIRECT, '/chat');
+    if (!id) return list(req, res, next);
     const conversation = await chatRepository.findForUser(id, req.user.id);
     if (!conversation) return res.redirect(HTTP.REDIRECT, '/chat');
+    await chatRepository.markRead(
+      id,
+      req.user.id,
+      conversation.messages.at(-1)?.createdAt || new Date(),
+    );
     return res.render('pages/chat', { title: 'Conversation', conversation });
   } catch (error) {
     return next(error);
@@ -33,7 +38,7 @@ async function open(req, res, next) {
 async function send(req, res, next) {
   try {
     const body = typeof req.body.body === 'string' ? req.body.body.trim() : '';
-    if (body) await chatRepository.addMessage(Number(req.params.id), req.user.id, body);
+    await chatRepository.addMessage(Number(req.params.id), req.user.id, body);
     return res.redirect(HTTP.REDIRECT, `/chat?conversationId=${req.params.id}`);
   } catch (error) {
     return next(error);

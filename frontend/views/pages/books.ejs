@@ -59,7 +59,8 @@
 <label class="flex items-center gap-2 text-sm font-semibold">
 <input type="checkbox" name="exchangeOnly" value="1" <%= filters.exchangeOnly ? 'checked' : '' %>> Exchange only</label>
 <select name="sort" class="h-11 rounded-xl bg-white px-3 text-sm font-semibold">
-<option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Newest</option>
+<option value="popularity" <%= filters.sort === 'popularity' ? 'selected' : '' %>><%= strings.WORKFLOW.POPULAR %></option>
+<option value="newest"  <%= filters.sort === 'newest' ? 'selected' : '' %>>Newest</option>
 <option value="oldest" <%= filters.sort === 'oldest' ? 'selected' : '' %>>Oldest</option>
 <option value="price-asc" <%= filters.sort === 'price-asc' ? 'selected' : '' %>>Lowest price</option>
 <option value="price-desc" <%= filters.sort === 'price-desc' ? 'selected' : '' %>>Highest price</option>

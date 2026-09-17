@@ -1,4 +1,26 @@
 module.exports = Object.freeze({
+  WORKFLOW: Object.freeze({
+    PASSWORD_TITLE: 'Change password',
+    CURRENT_PASSWORD: 'Current password',
+    NEW_PASSWORD: 'New password',
+    REPEAT_PASSWORD: 'Repeat new password',
+    PASSWORD_NOTE:
+      'Use at least 8 characters, one uppercase letter and one number. After saving, log in again with your new password.',
+    POPULAR: 'Most popular',
+    SOLD: 'Sold',
+    EXCHANGED: 'Exchanged',
+    BOOKS: 'Books',
+    ORDERS: 'Orders',
+    UNREAD: 'Unread',
+    EDIT_REVIEW: 'Update review',
+    DELETE_REVIEW: 'Delete review',
+    MESSAGE: 'Contact reader',
+    BOOK: 'Book',
+    REVIEW: 'Review',
+    YOUR_REVIEW: 'Your review',
+    CITY: 'City',
+    BIO: 'About you',
+  }),
   BOOK: Object.freeze({
     PAGE_TITLE: 'Add a book',
     EYEBROW: 'YOUR NEXT CHAPTER',

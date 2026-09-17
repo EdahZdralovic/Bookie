@@ -58,6 +58,7 @@ async function verificationForm(req, res) {
     title: 'Verify email',
     email: req.query.email || '',
     resendAfter: remaining,
+    formError: '',
   });
 }
 async function verifyEmail(req, res, next) {

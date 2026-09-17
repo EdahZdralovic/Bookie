@@ -11,6 +11,10 @@
     <main class="form-page">
       <a class="auth-back" href="/books">← Explore books</a>
       <h1>Your cart</h1>
+      <% if (formError) { %>
+        <p class="form-alert" role="alert"><%= formError %></p>
+      <% } %>
+
       <div class="seller-book-list">
         <% (cart?.items || []).forEach((item) => { %>
         <div class="seller-book-row">

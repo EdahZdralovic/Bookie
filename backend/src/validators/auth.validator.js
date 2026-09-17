@@ -74,7 +74,7 @@ function validateRegistration(body = {}) {
   data.cityId = Number(body.cityId);
   for (const field of ['genreIds', 'languageIds']) {
     const ids = selected(body[field]);
-    if (ids.length === 0)
+    if (ids.length === 0 && data.role !== AUTH.ROLES.SELLER)
       errors[field] =
         field === 'genreIds' ? EXCEPTIONS.GENRES_REQUIRED : EXCEPTIONS.LANGUAGES_REQUIRED;
     else if (ids.length > AUTH.MAX_INTERESTS || !ids.every(isId))
