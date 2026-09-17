@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Cart — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/auth.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <a class="auth-back" href="/books">← Explore books</a>
+      <h1>Your cart</h1>
+      <div class="seller-book-list">
+        <% (cart?.items || []).forEach((item) => { %>
+        <div class="seller-book-row">
+          <div class="seller-book-info">
+            <strong>
+              <%= item.book.title %>
+            </strong>
+            <span><%= item.book.author %></span>
+          </div>
+          <strong>
+            <%= Number(item.book.price).toFixed(2) %>
+            BAM</strong>
+          <form method="post" action="/cart/<%= item.bookId %>/remove">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="filter-button" type="submit">Remove</button>
+          </form>
+        </div>
+        <% }) %>
+      </div>
+      <% if (!cart?.items?.length) { %>
+      <p class="field-hint">Your cart is empty.</p>
+      <% } else { %>
+      <form method="post" action="/checkout">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button class="auth-submit" type="submit">Checkout <span>↗</span></button>
+      </form>
+      <% } %>
+    </main>
+  </body>
+</html>

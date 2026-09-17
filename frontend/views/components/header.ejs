@@ -1,33 +1,120 @@
-<% if (!suppressShell) { %><header class="sticky top-0 z-50 border-b border-ink/10 bg-paper/90 backdrop-blur-xl">
+<% if (!suppressShell) { %>
+<header class="sticky top-0 z-50 border-b border-ink/10 bg-paper/90 backdrop-blur-xl">
   <nav class="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
     <a href="/" class="group flex items-center gap-3" aria-label="Bookie home">
-      <span class="grid h-10 w-10 place-items-center rounded-xl bg-ink text-paper transition group-hover:-rotate-6">
-        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+      <span
+        class="grid h-10 w-10 place-items-center rounded-xl bg-ink text-paper transition group-hover:-rotate-6"
+      >
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+        </svg>
       </span>
-      <span class="text-2xl font-black tracking-[-0.06em] text-ink">bookie<span class="text-brand-500">.</span></span>
+      <span class="text-2xl font-black tracking-[-0.06em] text-ink"
+        >bookie<span class="text-brand-500">.</span>
+      </span>
     </a>
-
-    <div class="hidden items-center gap-8 text-sm font-semibold text-ink/70 md:flex">
-      <a href="/books" class="transition hover:text-ink">Explore books</a>
-      <a href="#how-it-works" class="transition hover:text-ink">How it works</a>
-      <a href="#categories" class="transition hover:text-ink">Categories</a>
-    </div>
-
-    <div class="flex items-center gap-2 sm:gap-3">
+    <div class="hidden items-center gap-8 text-sm font-semibold text-ink/70 md:flex"></div>
+    <div class="desktop-nav-actions hidden items-center gap-2 sm:gap-3 md:flex">
       <% if (currentUser) { %>
-        <a href="<%= auth.PATHS.ACCOUNT %>" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"><%= currentUser.firstName %></a>
-        <a href="/profile" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"><%= strings.COMMON.PROFILE %></a>
-        <a href="/chat/list" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Messages</a>
-        <% if (currentUser.role === 'ADMIN') { %><a href="/statistics" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Statistics</a><% } %>
-        <% if (currentUser.role === 'SELLER') { %><a href="/books/new" class="rounded-xl bg-brand-500 px-3 py-2 text-sm font-bold text-white"><%= strings.COMMON.ADD_BOOK %></a><% } %>
-        <form action="<%= auth.PATHS.LOGOUT %>" method="post">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <button class="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white"><%= authText.LOGOUT %></button>
-        </form>
+      <a href="<%= auth.PATHS.ACCOUNT %>" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">
+        <%= currentUser.firstName %>
+      </a>
+      <a href="/profile" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">
+        <%= strings.COMMON.PROFILE %>
+      </a>
+      <a href="/chat/list" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Messages</a>
+      <a href="/cart" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Cart</a>
+      <a href="/exchange-books" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"
+        >My exchange books</a>
+      <% if (currentUser.role === 'SELLER') { %>
+      <a href="/exchange-offers" class="rounded-xl px-3 py-2 text-sm font-bold text-ink"
+        >Exchange offers</a>
+      <% } %>
+      <% if (currentUser.role === 'ADMIN') { %>
+      <a href="/admin" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Admin panel</a>
+      <a href="/statistics" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Statistics</a>
+      <a href="/admin/reviews" class="rounded-xl px-3 py-2 text-sm font-bold text-ink">Reviews</a>
+      <% } %>
+      <% if (currentUser.role === 'SELLER') { %>
+      <a href="/books/new" class="rounded-xl bg-brand-500 px-3 py-2 text-sm font-bold text-white">
+        <%= strings.COMMON.ADD_BOOK %>
+      </a>
+      <% } %>
+      <form action="<%= auth.PATHS.LOGOUT %>" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button class="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white">
+          <%= authText.LOGOUT %>
+        </button>
+      </form>
       <% } else { %>
-        <a href="<%= auth.PATHS.LOGIN %>" class="rounded-xl px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-ink/5"><%= authText.LOGIN_BUTTON %></a>
-        <a href="<%= auth.PATHS.REGISTER %>" class="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-ink/15 transition hover:-translate-y-0.5 hover:bg-brand-600 sm:px-5"><%= authText.REGISTER_BUTTON %></a>
+      <a
+        href="<%= auth.PATHS.LOGIN %>"
+        class="rounded-xl px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-ink/5"
+      >
+        <%= authText.LOGIN_BUTTON %>
+      </a>
+      <a
+        href="<%= auth.PATHS.REGISTER %>"
+        class="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-ink/15 transition hover:-translate-y-0.5 hover:bg-brand-600 sm:px-5"
+      >
+        <%= authText.REGISTER_BUTTON %>
+      </a>
       <% } %>
     </div>
+    <button
+      class="mobile-menu-toggle md:hidden"
+      type="button"
+      data-menu-open
+      aria-controls="mobile-menu"
+      aria-expanded="false"
+      aria-label="Open navigation menu"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
   </nav>
-</header><% } %>
+  <div class="mobile-menu-backdrop" data-menu-close></div>
+  <aside id="mobile-menu" class="mobile-menu" aria-hidden="true">
+    <div class="mobile-menu-header">
+      <span class="text-xl font-black">Menu</span>
+      <button
+        class="mobile-menu-close"
+        type="button"
+        data-menu-close
+        aria-label="Close navigation menu"
+      >
+        ←
+      </button>
+    </div>
+    <div class="mobile-menu-links">
+      <% if (currentUser) { %>
+      <a href="<%= auth.PATHS.ACCOUNT %>"> <%= currentUser.firstName %> </a>
+      <a href="/profile"> <%= strings.COMMON.PROFILE %> </a>
+      <a href="/chat/list">Messages</a>
+      <a href="/cart">Cart</a>
+      <a href="/exchange-books">My exchange books</a>
+      <% if (currentUser.role === 'SELLER') { %>
+      <a href="/exchange-offers">Exchange offers</a>
+      <a class="mobile-menu-primary" href="/books/new"> <%= strings.COMMON.ADD_BOOK %> </a>
+      <% } %>
+      <% if (currentUser.role === 'ADMIN') { %>
+      <a href="/admin">Admin panel</a>
+      <a href="/statistics">Statistics</a>
+      <a href="/admin/reviews">Reviews</a>
+      <% } %>
+      <form action="<%= auth.PATHS.LOGOUT %>" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button type="submit"><%= authText.LOGOUT %></button>
+      </form>
+      <% } else { %>
+      <a href="<%= auth.PATHS.LOGIN %>"> <%= authText.LOGIN_BUTTON %> </a>
+      <a class="mobile-menu-primary" href="<%= auth.PATHS.REGISTER %>">
+        <%= authText.REGISTER_BUTTON %>
+      </a>
+      <% } %>
+    </div>
+  </aside>
+</header>
+<% } %>

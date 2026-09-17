@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Edit book — Bookie</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/auth.css">
+</head>
+<body class="account-body">
+<main class="form-page">
+<a class="auth-back" href="/profile">← Back to profile</a>
+<h1>Edit book</h1>
+<form class="workflow-form" method="post" action="/books/<%= book.id %>" enctype="multipart/form-data" novalidate>
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<% if (formError) { %>
+<div class="form-alert" role="alert">
+<strong>Error</strong>
+<p>
+<%= formError %>
+</p>
+</div>
+<% } %>
+<div class="workflow-grid two">
+<% [['title','Title','text'],['author','Author','text'],['publisher','Publisher','text'],['publicationYear','Publication year','number'],['isbn','ISBN','text'],['price','Price','number']].forEach(([name,label,type]) => { %>
+<div class="auth-field">
+<label for="<%= name %>">
+<%= label %>
+</label>
+<input id="<%= name %>" name="<%= name %>" type="<%= type %>" value="<%= values[name] || '' %>" <%= name === 'price' ? 'min="0" step="0.01"' : '' %> required>
+<p class="field-error">
+<%= errors[name] || '' %>
+</p>
+</div>
+<% }) %>
+</div>
+<div class="auth-field">
+<label for="description">Description</label>
+<textarea id="description" name="description" rows="5" required>
+<%= values.description || '' %>
+</textarea>
+<p class="field-error">
+<%= errors.description || '' %>
+</p>
+</div>
+<div class="workflow-grid two">
+<% [['genreId','Genre',options.genres],['languageId','Language',options.languages],['conditionId','Condition',options.conditions],['cityId','Pickup city',options.cities]].forEach(([name,label,choices]) => { %>
+<div class="auth-field">
+<label for="<%= name %>">
+<%= label %>
+</label>
+<select id="<%= name %>" name="<%= name %>" required>
+<% choices.forEach((choice) => { %>
+<option value="<%= choice.id %>" <%= String(values[name]) === String(choice.id) ? 'selected' : '' %>>
+<%= choice.name %>
+</option>
+<% }) %>
+</select>
+<p class="field-error">
+<%= errors[name] || '' %>
+</p>
+</div>
+<% }) %>
+</div>
+<div class="auth-field">
+<label for="image">Replace cover image</label>
+<input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp">
+<p class="field-hint">Optional. JPG, PNG or WebP up to 5 MB.</p>
+</div>
+<% if (user.role === 'SELLER') { %>
+<label class="check-card">
+<input type="checkbox" name="allowExchange" <%= values.allowExchange ? 'checked' : '' %>>
+<span>
+<strong>Available for exchange</strong>
+<small>Keep this enabled if buyers may offer another book.</small>
+</span>
+</label>
+<% } else { %>
+<input type="hidden" name="allowExchange" value="on">
+<% } %>
+<button class="auth-submit" type="submit">Save changes <span>↗</span>
+</button>
+</form>
+</main>
+</body>
+</html>

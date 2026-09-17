@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title><!= seller.firstName !> <!= seller.lastName !> — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/auth.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <a class="auth-back" href="/books">← Explore books</a>
+      <section class="profile-heading">
+        <div class="profile-preview">
+          <% if (seller.avatarUrl) { %>
+          <img src="<%= seller.avatarUrl %>" alt="<%= seller.firstName %> <%= seller.lastName %>" />
+          <% } else { %>
+          <span>
+            <%= seller.firstName.charAt(0) %>
+            <%= seller.lastName.charAt(0) %>
+          </span>
+          <% } %>
+        </div>
+        <div>
+          <p class="auth-step">SELLER PROFILE</p>
+          <h1>
+            <%= seller.firstName %>
+            <%= seller.lastName %>
+          </h1>
+          <p class="auth-description"><%= seller.bio || 'Bookie seller' %></p>
+          <p>
+            <%= seller.city?.name || 'Location not specified' %> · <%= seller.bookCount %> active
+            books · <%= seller.averageRating.toFixed(1) %>/5 (<%= seller.reviewCount %> reviews)
+          </p>
+        </div>
+      </section>
+      <div class="profile-actions">
+        <a class="secondary-action" href="/chat/new?userId=<%= seller.id %>">Open chat</a>
+      </div>
+      <section class="seller-books">
+        <h2>Active books</h2>
+        <div class="seller-book-list">
+          <% seller.books.forEach((book) => { %>
+          <a class="seller-book-row" href="/books/<%= book.id %>">
+            <strong>
+              <%= book.title %>
+            </strong>
+            <span>
+              <%= book.author %>
+              ·
+              <%= Number(book.price).toFixed(2) %>
+              BAM</span>
+          </a>
+          <% }) %>
+          <% if (!seller.books.length) { %>
+          <p class="field-hint">No active books.</p>
+          <% } %>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

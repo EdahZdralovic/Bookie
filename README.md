@@ -48,6 +48,19 @@ is preserved; its schema and migrations are archived in `backend/prisma/legacy-s
 
 The administrator is created only through `prisma/seed.js`, never through public registration.
 
+## Order email notifications
+
+Order notifications use Resend. Create an API key, verify your sending domain in Resend,
+then add `RESEND_API_KEY` and `RESEND_FROM_EMAIL` to `backend/.env`. For example:
+
+```text
+RESEND_FROM_EMAIL="Bookie <orders@mail.your-domain.com>"
+```
+
+After checkout, each seller receives the order number, purchased books, total amount, and
+the buyer's name and email address. Email delivery runs after the order transaction and a
+temporary mail provider failure does not cancel a successful order.
+
 ## Database modules
 
 The Prisma schema covers users and sessions, lookup catalogs, books and pickup locations,
@@ -77,6 +90,10 @@ wishlist alerts, safe pickup points and seller badges.
 - `frontend/views/components` — reusable EJS components
 - `frontend/src` — Tailwind input, browser utilities, and constants
 - `frontend/public` — generated CSS and public JavaScript/assets
+
+## Code formatting
+
+Prettier is configured at the project root. Run `npm run format` from `backend` to format source code, or `npm run format:check` to verify formatting before committing.
 
 See [backend architecture and authentication options](docs/backend-architecture.md)
 for layer responsibilities and authentication/authorization placement.

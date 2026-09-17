@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Exchange offers — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/auth.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <p class="auth-step">SELLER WORKSPACE</p>
+      <h1>Exchange offers</h1>
+      <div class="seller-book-list">
+        <% orders.forEach((order) => { %>
+        <article class="seller-book-row">
+          <div class="seller-book-info">
+            <strong>
+              <%= order.buyer.firstName %>
+              <%= order.buyer.lastName %>
+            </strong>
+            <span
+              >Wants your book:
+              <%= order.items[0]?.bookTitle %>
+              · Status:
+              <%= order.status %>
+            </span>
+            <span
+              >Offers: <%= order.exchangeOffer?.offeredBooks.map((item) =>
+              item.book.title).join(String.fromCharCode(44, 32)) || 'None' %>
+            </span>
+            <span
+              >Contact:
+              <%= order.buyer.email %>
+              ·
+              <%= order.buyer.phone %>
+            </span>
+          </div>
+          <% if (order.status === 'PENDING') { %>
+          <form method="post" action="/orders/<%= order.id %>/status">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button name="status" value="ACCEPTED">Accept</button>
+            <button name="status" value="REJECTED">Reject</button>
+          </form>
+          <% } %>
+        </article>
+        <% }) %>
+        <% if (!orders.length) { %>
+        <p class="field-hint">No exchange offers yet.</p>
+        <% } %>
+      </div>
+    </main>
+  </body>
+</html>

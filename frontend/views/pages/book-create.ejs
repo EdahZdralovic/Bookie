@@ -1,32 +1,130 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %> — Bookie</title><link rel="stylesheet" href="/css/styles.css"><link rel="stylesheet" href="/css/auth.css">
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+<%= title %> — Bookie</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/auth.css">
 </head>
 <body class="account-body">
   <main class="form-page">
-    <a class="auth-back" href="/account">← <%= strings.BOOK.BACK %></a>
-    <div class="form-page-header"><p class="auth-step"><%= strings.BOOK.EYEBROW %></p><h1><%= strings.BOOK.HEADING %></h1><p class="auth-description"><%= strings.BOOK.DESCRIPTION %></p></div>
-    <form class="workflow-form" method="post" action="/books" novalidate>
+    <a class="auth-back" href="/account">← <%= strings.BOOK.BACK %>
+</a>
+    <div class="form-page-header">
+<p class="auth-step">
+<%= strings.BOOK.EYEBROW %>
+</p>
+<h1>
+<%= strings.BOOK.HEADING %>
+</h1>
+<p class="auth-description">
+<%= strings.BOOK.DESCRIPTION %>
+</p>
+</div>
+    <form class="workflow-form" method="post" action="/books<%= exchangeMode ? '?exchange=1' : '' %>" enctype="multipart/form-data" novalidate>
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <% if (formError) { %><div class="form-alert" role="alert"><span class="alert-icon">!</span><div><strong><%= strings.COMMON.ERROR_TITLE %></strong><p><%= formError %></p></div></div><% } %>
-      <p class="required-note"><%= strings.BOOK.REQUIRED %></p>
+      <% if (formError) { %>
+<div class="form-alert" role="alert">
+<span class="alert-icon">!</span>
+<div>
+<strong>
+<%= strings.COMMON.ERROR_TITLE %>
+</strong>
+<p>
+<%= formError %>
+</p>
+</div>
+</div>
+<% } %>
+      <p class="required-note">
+<%= strings.BOOK.REQUIRED %>
+</p>
+      <% if (exchangeMode || (user && user.role === 'BUYER')) { %>
+<input type="hidden" name="price" value="0">
+<input type="hidden" name="allowExchange" value="on">
+<p class="field-hint">This listing is exchange-only and cannot be sold.</p>
+<% } %>
       <div class="workflow-grid two">
-        <% [['title', strings.BOOK.TITLE, 'text'], ['author', strings.BOOK.AUTHOR, 'text'], ['publisher', strings.BOOK.PUBLISHER, 'text'], ['publicationYear', strings.BOOK.YEAR, 'number'], ['isbn', strings.BOOK.ISBN, 'text'], ['price', strings.BOOK.PRICE, 'number']].forEach(([name, label, type]) => { %>
-          <div class="auth-field"><label for="<%= name %>"><%= label %><% if (name !== 'isbn') { %><span class="required-star">*</span><% } %></label><input id="<%= name %>" name="<%= name %>" type="<%= type %>" value="<%= values[name] || '' %>" <%= name === 'price' ? 'min="0" step="0.01"' : '' %> <%= name !== 'isbn' ? 'required' : '' %> aria-invalid="<%= Boolean(errors[name]) %>"><p class="field-error"><%= errors[name] || '' %></p></div>
+        <% [['title', strings.BOOK.TITLE, 'text'], ['author', strings.BOOK.AUTHOR, 'text'], ['publisher', strings.BOOK.PUBLISHER, 'text'], ['publicationYear', strings.BOOK.YEAR, 'number'], ['isbn', strings.BOOK.ISBN, 'text'], ...((exchangeMode || (user && user.role === 'BUYER')) ? [] : [['price', strings.BOOK.PRICE, 'number']])].forEach(([name, label, type]) => { %>
+          <div class="auth-field">
+<label for="<%= name %>">
+<%= label %>
+<% if (name !== 'isbn') { %>
+<span class="required-star">*</span>
+<% } %>
+</label>
+<input id="<%= name %>" name="<%= name %>" type="<%= type %>" value="<%= values[name] || '' %>" <%= name === 'price' ? 'min="0" step="0.01"' : '' %> <%= name !== 'isbn' ? 'required' : '' %> aria-invalid="<%= Boolean(errors[name]) %>">
+<p class="field-error">
+<%= errors[name] || '' %>
+</p>
+</div>
         <% }) %>
       </div>
-      <div class="auth-field"><label for="description"><%= strings.BOOK.DESCRIPTION_LABEL %><span class="required-star">*</span></label><textarea id="description" name="description" rows="5" required aria-invalid="<%= Boolean(errors.description) %>"><%= values.description || '' %></textarea><p class="field-error"><%= errors.description || '' %></p></div>
+      <div class="auth-field">
+<label for="description">
+<%= strings.BOOK.DESCRIPTION_LABEL %>
+<span class="required-star">*</span>
+</label>
+<textarea id="description" name="description" rows="5" required aria-invalid="<%= Boolean(errors.description) %>">
+<%= values.description || '' %>
+</textarea>
+<p class="field-error">
+<%= errors.description || '' %>
+</p>
+</div>
       <div class="workflow-grid two">
         <% [['genreId', strings.BOOK.GENRE, options.genres], ['languageId', strings.BOOK.LANGUAGE, options.languages], ['conditionId', strings.BOOK.CONDITION, options.conditions], ['cityId', strings.BOOK.CITY, options.cities]].forEach(([name, label, choices]) => { %>
-          <div class="auth-field"><label for="<%= name %>"><%= label %><span class="required-star">*</span></label><select id="<%= name %>" name="<%= name %>" required aria-invalid="<%= Boolean(errors[name]) %>"><option value=""><%= strings.COMMON.SELECT %></option><% choices.forEach((choice) => { %><option value="<%= choice.id %>" <%= String(values[name]) === String(choice.id) ? 'selected' : '' %>><%= choice.name %></option><% }) %></select><p class="field-error"><%= errors[name] || '' %></p></div>
+          <div class="auth-field">
+<label for="<%= name %>">
+<%= label %>
+<span class="required-star">*</span>
+</label>
+<select id="<%= name %>" name="<%= name %>" required aria-invalid="<%= Boolean(errors[name]) %>">
+<option value="">
+<%= strings.COMMON.SELECT %>
+</option>
+<% choices.forEach((choice) => { %>
+<option value="<%= choice.id %>" <%= String(values[name]) === String(choice.id) ? 'selected' : '' %>>
+<%= choice.name %>
+</option>
+<% }) %>
+</select>
+<p class="field-error">
+<%= errors[name] || '' %>
+</p>
+</div>
         <% }) %>
       </div>
-      <div class="auth-field"><label for="imageUrl"><%= strings.BOOK.IMAGE %></label><input id="imageUrl" name="imageUrl" type="url" value="<%= values.imageUrl || '' %>" placeholder="https://..."><p class="field-hint"><%= strings.BOOK.IMAGE_HINT %></p><p class="field-error"><%= errors.imageUrl || '' %></p></div>
-      <label class="check-card"><input type="checkbox" name="allowExchange" <%= values.allowExchange ? 'checked' : '' %>><span><strong><%= strings.BOOK.EXCHANGE %></strong><small><%= strings.BOOK.EXCHANGE_HINT %></small></span></label>
-      <p class="field-hint"><%= strings.BOOK.PRICE_HINT %></p>
-      <button class="auth-submit" type="submit"><%= strings.BOOK.SAVE %><span>↗</span></button>
+      <div class="auth-field">
+<label for="image">Cover image</label>
+<input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp">
+<p class="field-hint">Optional. JPG, PNG or WebP up to 5 MB.</p>
+<p class="field-error">
+<%= errors.imageUrl || '' %>
+</p>
+</div>
+      <% if (!exchangeMode && (!user || user.role !== 'BUYER')) { %>
+<label class="check-card">
+<input type="checkbox" name="allowExchange" <%= values.allowExchange ? 'checked' : '' %>>
+<span>
+<strong>
+<%= strings.BOOK.EXCHANGE %>
+</strong>
+<small>
+<%= strings.BOOK.EXCHANGE_HINT %>
+</small>
+</span>
+</label>
+<% } %>
+      <p class="field-hint">
+<%= strings.BOOK.PRICE_HINT %>
+</p>
+      <button class="auth-submit" type="submit">
+<%= strings.BOOK.SAVE %>
+<span>↗</span>
+</button>
     </form>
   </main>
 </body>

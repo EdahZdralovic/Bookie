@@ -1,17 +1,20 @@
-<% if (!suppressShell) { %><footer class="bg-ink text-white">
-  <div class="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:px-8 md:grid-cols-[1.5fr_1fr_1fr]">
-    <div>
-      <p class="text-2xl font-black tracking-[-0.06em]">bookie<span class="text-brand-500">.</span></p>
-      <p class="mt-4 max-w-sm text-sm leading-6 text-white/55">A student platform for safe book sales and exchanges across Bosnia and Herzegovina.</p>
-    </div>
-    <div>
-      <h3 class="text-sm font-bold">Platform</h3>
-      <div class="mt-4 grid gap-3 text-sm text-white/55"><a href="#books">Explore books</a><a href="#how-it-works">How it works</a><a href="/books/new">List a book</a></div>
-    </div>
-    <div>
-      <h3 class="text-sm font-bold">Support</h3>
-      <div class="mt-4 grid gap-3 text-sm text-white/55"><a href="#">Help center</a><a href="#">Safe exchange</a><a href="#">Contact</a></div>
+<% if (!suppressShell) { %>
+<footer class="bg-ink text-white">
+  <div
+    class="mx-auto grid max-w-7xl justify-items-center gap-10 px-5 py-14 text-center sm:px-8 md:grid-cols-1"
+  >
+    <div class="max-w-xl">
+      <p class="text-2xl font-black tracking-[-0.06em]">
+        bookie<span class="text-brand-500">.</span>
+      </p>
+      <p class="mt-4 max-w-sm text-sm leading-6 text-white/55">
+        A student platform for safe book sales and exchanges across Bosnia and Herzegovina.
+      </p>
     </div>
   </div>
-  <div class="border-t border-white/10 px-5 py-5 text-center text-xs text-white/35">© <%= new Date().getFullYear() %> Bookie · University of Sarajevo project</div>
-</footer><% } %>
+  <div class="border-t border-white/10 px-5 py-5 text-center text-xs text-white/35">
+    © <%= new Date().getFullYear() %> Bookie · University of Sarajevo project · Developed by Edah
+    Zdralovic
+  </div>
+</footer>
+<% } %>

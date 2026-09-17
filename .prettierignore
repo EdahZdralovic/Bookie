@@ -1,0 +1,6 @@
+backend/node_modules
+backend/prisma/dev.db
+backend/prisma/migrations
+frontend/public/css/styles.css
+frontend/public/users
+.git

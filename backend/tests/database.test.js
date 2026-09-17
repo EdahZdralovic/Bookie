@@ -22,33 +22,50 @@ let appDatabase;
 const rollbackSignal = new Error('ROLLBACK_TEST');
 async function rollback(work) {
   try {
-    await db.$transaction(async (tx) => { await work(tx); throw rollbackSignal; });
-  } catch (error) { if (error !== rollbackSignal) throw error; }
+    await db.$transaction(async (tx) => {
+      await work(tx);
+      throw rollbackSignal;
+    });
+  } catch (error) {
+    if (error !== rollbackSignal) throw error;
+  }
 }
 function migrate(...args) {
   return execFileSync(process.execPath, [require.resolve('prisma/build/index.js'), ...args], {
-    cwd: root, env: { ...process.env, DATABASE_URL: testUrl.href }, encoding: 'utf8', stdio: 'pipe',
+    cwd: root,
+    env: { ...process.env, DATABASE_URL: testUrl.href },
+    encoding: 'utf8',
+    stdio: 'pipe',
   });
 }
 
-before(async () => {
-  assert.match(databaseName, /^bookie_test_\d+_\d+$/);
-  await admin.$executeRawUnsafe(`CREATE DATABASE "${databaseName}"`);
-  created = true;
-  migrate('migrate', 'deploy');
-  process.env.DATABASE_URL = testUrl.href;
-  const { seedDatabase } = require('../prisma/seed');
-  await seedDatabase(db);
-  fixtures = {
-    buyer: await db.user.findUniqueOrThrow({ where: { email: 'student@bookie.test' } }),
-    seller: await db.user.findUniqueOrThrow({ where: { email: 'prodavac@bookie.ba' } }),
-    admin: await db.user.findUniqueOrThrow({ where: { email: 'admin@bookie.ba' } }),
-    book: await db.book.findUniqueOrThrow({ where: { publicId: 'demo-clean-code' } }),
-    sale: await db.order.findUniqueOrThrow({ where: { orderNumber: 'BK-DEMO-001' }, include: { items: true } }),
-    exchange: await db.order.findUniqueOrThrow({ where: { orderNumber: 'BK-DEMO-002' } }),
-    pending: await db.order.findUniqueOrThrow({ where: { orderNumber: 'BK-DEMO-003' }, include: { items: true } }),
-  };
-}, { timeout: 60000 });
+before(
+  async () => {
+    assert.match(databaseName, /^bookie_test_\d+_\d+$/);
+    await admin.$executeRawUnsafe(`CREATE DATABASE "${databaseName}"`);
+    created = true;
+    migrate('migrate', 'deploy');
+    process.env.DATABASE_URL = testUrl.href;
+    const { seedDatabase } = require('../prisma/seed');
+    await seedDatabase(db);
+    fixtures = {
+      buyer: await db.user.findUniqueOrThrow({ where: { email: 'student@bookie.test' } }),
+      seller: await db.user.findUniqueOrThrow({ where: { email: 'prodavac@bookie.ba' } }),
+      admin: await db.user.findUniqueOrThrow({ where: { email: 'admin@bookie.ba' } }),
+      book: await db.book.findUniqueOrThrow({ where: { publicId: 'demo-clean-code' } }),
+      sale: await db.order.findUniqueOrThrow({
+        where: { orderNumber: 'BK-DEMO-001' },
+        include: { items: true },
+      }),
+      exchange: await db.order.findUniqueOrThrow({ where: { orderNumber: 'BK-DEMO-002' } }),
+      pending: await db.order.findUniqueOrThrow({
+        where: { orderNumber: 'BK-DEMO-003' },
+        include: { items: true },
+      }),
+    };
+  },
+  { timeout: 60000 },
+);
 
 after(async () => {
   if (appDatabase) await appDatabase.$disconnect();
@@ -58,70 +75,160 @@ after(async () => {
 });
 
 test('fresh migrations create every English-named model and both statistics views', async () => {
-  const tables = await db.$queryRaw`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> '_prisma_migrations'`;
+  const tables =
+    await db.$queryRaw`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> '_prisma_migrations'`;
   const modelNames = Prisma.dmmf.datamodel.models.map((model) => model.name).sort();
   assert.equal(modelNames.length, 33);
   assert.deepEqual(tables.map((row) => row.table_name).sort(), modelNames);
-  const columns = await db.$queryRaw`SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name <> '_prisma_migrations'`;
+  const columns =
+    await db.$queryRaw`SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name <> '_prisma_migrations'`;
   for (const { column_name } of columns) assert.match(column_name, /^[A-Za-z][A-Za-z0-9]*$/);
-  const views = await db.$queryRaw`SELECT table_name FROM information_schema.views WHERE table_schema = 'public'`;
-  assert.deepEqual(views.map((row) => row.table_name).sort(), ['BookStatistics', 'SellerStatistics']);
+  const views =
+    await db.$queryRaw`SELECT table_name FROM information_schema.views WHERE table_schema = 'public'`;
+  assert.deepEqual(views.map((row) => row.table_name).sort(), [
+    'BookStatistics',
+    'SellerStatistics',
+  ]);
   const documentation = fs.readFileSync(path.join(root, '../docs/database.md'), 'utf8');
-  for (const name of modelNames) assert.ok(documentation.includes(`\`${name}\``), `${name} missing from database documentation`);
+  for (const name of modelNames)
+    assert.ok(documentation.includes(`\`${name}\``), `${name} missing from database documentation`);
 });
 
 test('migration replay is a no-op and the schema has no drift', () => {
   assert.match(migrate('migrate', 'deploy'), /No pending migrations/);
-  // The connection URL is passed through the environment, never printed.
-  migrate('migrate', 'diff', '--from-schema-datasource', 'prisma/schema.prisma',
-    '--to-schema-datamodel', 'prisma/schema.prisma', '--exit-code');
+  migrate(
+    'migrate',
+    'diff',
+    '--from-schema-datasource',
+    'prisma/schema.prisma',
+    '--to-schema-datamodel',
+    'prisma/schema.prisma',
+    '--exit-code',
+  );
 });
 
 test('seed reruns preserve counts, edited passwords and moderated users', async () => {
-  const counts = async () => Promise.all(Prisma.dmmf.datamodel.models.map((model) => db[model.name[0].toLowerCase() + model.name.slice(1)].count()));
+  const counts = async () =>
+    Promise.all(
+      Prisma.dmmf.datamodel.models.map((model) =>
+        db[model.name[0].toLowerCase() + model.name.slice(1)].count(),
+      ),
+    );
   const initial = await counts();
-  await db.user.update({ where: { id: fixtures.buyer.id }, data: { status: 'BLOCKED', passwordHash: 'test-preserved-hash' } });
+  await db.user.update({
+    where: { id: fixtures.buyer.id },
+    data: { status: 'BLOCKED', passwordHash: 'test-preserved-hash' },
+  });
   await require('../prisma/seed').seedDatabase(db);
   assert.deepEqual(await counts(), initial);
   const user = await db.user.findUniqueOrThrow({ where: { id: fixtures.buyer.id } });
   assert.equal(user.status, 'BLOCKED');
   assert.equal(user.passwordHash, 'test-preserved-hash');
-  await db.user.update({ where: { id: user.id }, data: { status: fixtures.buyer.status, passwordHash: fixtures.buyer.passwordHash } });
+  await db.user.update({
+    where: { id: user.id },
+    data: { status: fixtures.buyer.status, passwordHash: fixtures.buyer.passwordHash },
+  });
 });
 
 test('required book details and money constraints reject invalid rows', async () => {
-  for (const data of [{ price: '-0.01' }, { price: '0.00', allowExchange: false }, { title: ' ' }, { publicationYear: 0 }]) {
-    await assert.rejects(rollback((tx) => tx.book.update({ where: { id: fixtures.book.id }, data })), /constraint/i);
+  for (const data of [
+    { price: '-0.01' },
+    { price: '0.00', allowExchange: false },
+    { title: ' ' },
+    { publicationYear: 0 },
+  ]) {
+    await assert.rejects(
+      rollback((tx) => tx.book.update({ where: { id: fixtures.book.id }, data })),
+      /constraint/i,
+    );
   }
-  await assert.rejects(rollback((tx) => tx.$executeRaw`UPDATE "Book" SET "genreId" = NULL WHERE id = ${fixtures.book.id}`), /null/i);
+  await assert.rejects(
+    rollback(
+      (tx) => tx.$executeRaw`UPDATE "Book" SET "genreId" = NULL WHERE id = ${fixtures.book.id}`,
+    ),
+    /null/i,
+  );
   await rollback(async (tx) => {
-    const book = await tx.book.update({ where: { id: fixtures.book.id }, data: { price: '19.99' } });
+    const book = await tx.book.update({
+      where: { id: fixtures.book.id },
+      data: { price: '19.99' },
+    });
     assert.equal(book.price.toFixed(2), '19.99');
   });
 });
 
 test('legacy enums, duplicate email, mixed-case email and inconsistent account states are rejected', async () => {
-  await assert.rejects(rollback((tx) => tx.$executeRaw`UPDATE "User" SET role = 'STUDENT' WHERE id = ${fixtures.buyer.id}`), /enum/i);
-  await assert.rejects(rollback((tx) => tx.$executeRaw`UPDATE "Book" SET status = 'AVAILABLE' WHERE id = ${fixtures.book.id}`), /enum/i);
-  for (const data of [{ email: fixtures.seller.email }, { email: 'Mixed@Example.com' }, { status: 'ARCHIVED' }, { blockedUntil: new Date() }]) {
-    await assert.rejects(rollback((tx) => tx.user.update({ where: { id: fixtures.buyer.id }, data })));
+  await assert.rejects(
+    rollback(
+      (tx) => tx.$executeRaw`UPDATE "User" SET role = 'STUDENT' WHERE id = ${fixtures.buyer.id}`,
+    ),
+    /enum/i,
+  );
+  await assert.rejects(
+    rollback(
+      (tx) => tx.$executeRaw`UPDATE "Book" SET status = 'AVAILABLE' WHERE id = ${fixtures.book.id}`,
+    ),
+    /enum/i,
+  );
+  for (const data of [
+    { email: fixtures.seller.email },
+    { email: 'Mixed@Example.com' },
+    { status: 'ARCHIVED' },
+    { blockedUntil: new Date() },
+  ]) {
+    await assert.rejects(
+      rollback((tx) => tx.user.update({ where: { id: fixtures.buyer.id }, data })),
+    );
   }
-  await rollback((tx) => tx.user.update({ where: { id: fixtures.buyer.id }, data: { status: 'BLOCKED', blockedUntil: new Date(Date.now() + 15 * 86400000) } }));
-  await rollback((tx) => tx.user.update({ where: { id: fixtures.buyer.id }, data: { status: 'ARCHIVED', archivedAt: new Date() } }));
+  await rollback((tx) =>
+    tx.user.update({
+      where: { id: fixtures.buyer.id },
+      data: { status: 'BLOCKED', blockedUntil: new Date(Date.now() + 15 * 86400000) },
+    }),
+  );
+  await rollback((tx) =>
+    tx.user.update({
+      where: { id: fixtures.buyer.id },
+      data: { status: 'ARCHIVED', archivedAt: new Date() },
+    }),
+  );
 });
 
 test('sessions store only hashes and require valid expiry', async () => {
-  const base = { userId: fixtures.buyer.id, tokenHash: 'a'.repeat(64), expiresAt: new Date(Date.now() + 3600000) };
+  const base = {
+    userId: fixtures.buyer.id,
+    tokenHash: 'a'.repeat(64),
+    expiresAt: new Date(Date.now() + 3600000),
+  };
   await rollback((tx) => tx.session.create({ data: base }));
-  await assert.rejects(rollback((tx) => tx.session.create({ data: { ...base, tokenHash: 'raw-token' } })), /constraint/i);
-  await assert.rejects(rollback((tx) => tx.session.create({ data: { ...base, expiresAt: new Date(0) } })), /constraint/i);
+  await assert.rejects(
+    rollback((tx) => tx.session.create({ data: { ...base, tokenHash: 'raw-token' } })),
+    /constraint/i,
+  );
+  await assert.rejects(
+    rollback((tx) => tx.session.create({ data: { ...base, expiresAt: new Date(0) } })),
+    /constraint/i,
+  );
 });
 
 test('orders reject self-purchase, invalid amounts and inconsistent status timestamps', async () => {
-  for (const data of [{ buyerId: fixtures.seller.id }, { totalAmount: '0.00' }, { status: 'COMPLETED' }, { currency: 'USD' }]) {
-    await assert.rejects(rollback((tx) => tx.order.update({ where: { id: fixtures.pending.id }, data })), /constraint/i);
+  for (const data of [
+    { buyerId: fixtures.seller.id },
+    { totalAmount: '0.00' },
+    { status: 'COMPLETED' },
+    { currency: 'USD' },
+  ]) {
+    await assert.rejects(
+      rollback((tx) => tx.order.update({ where: { id: fixtures.pending.id }, data })),
+      /constraint/i,
+    );
   }
-  await assert.rejects(rollback((tx) => tx.order.update({ where: { id: fixtures.exchange.id }, data: { totalAmount: '1.00' } })), /constraint/i);
+  await assert.rejects(
+    rollback((tx) =>
+      tx.order.update({ where: { id: fixtures.exchange.id }, data: { totalAmount: '1.00' } }),
+    ),
+    /constraint/i,
+  );
 });
 
 test('one physical book cannot be reserved by two concurrent orders', async () => {
@@ -134,15 +241,35 @@ test('one physical book cannot be reserved by two concurrent orders', async () =
     assert.equal(results.filter((result) => result.status === 'fulfilled').length, 1);
     assert.equal(results.filter((result) => result.status === 'rejected').length, 1);
     assert.equal(await db.bookReservation.count({ where: { bookId } }), 1);
-  } finally { await db.bookReservation.deleteMany({ where: { bookId } }); }
+  } finally {
+    await db.bookReservation.deleteMany({ where: { bookId } });
+  }
 });
 
 test('review eligibility, range and one-review-per-order-item are enforced', async () => {
-  const data = { orderItemId: fixtures.pending.items[0].id, rating: 5, editableUntil: new Date(Date.now() + 86400000) };
-  await assert.rejects(rollback((tx) => tx.review.create({ data })), /completed order/i);
-  await assert.rejects(rollback((tx) => tx.review.create({ data: { ...data, orderItemId: fixtures.sale.items[0].id } })), /unique/i);
-  const review = await db.review.findUniqueOrThrow({ where: { orderItemId: fixtures.sale.items[0].id } });
-  for (const rating of [0, 6]) await assert.rejects(rollback((tx) => tx.review.update({ where: { id: review.id }, data: { rating } })), /constraint/i);
+  const data = {
+    orderItemId: fixtures.pending.items[0].id,
+    rating: 5,
+    editableUntil: new Date(Date.now() + 86400000),
+  };
+  await assert.rejects(
+    rollback((tx) => tx.review.create({ data })),
+    /completed order/i,
+  );
+  await assert.rejects(
+    rollback((tx) =>
+      tx.review.create({ data: { ...data, orderItemId: fixtures.sale.items[0].id } }),
+    ),
+    /unique/i,
+  );
+  const review = await db.review.findUniqueOrThrow({
+    where: { orderItemId: fixtures.sale.items[0].id },
+  });
+  for (const rating of [0, 6])
+    await assert.rejects(
+      rollback((tx) => tx.review.update({ where: { id: review.id }, data: { rating } })),
+      /constraint/i,
+    );
 });
 
 test('statistics derive from reviews and completed records, including both exchange sides', async () => {
@@ -152,48 +279,102 @@ test('statistics derive from reviews and completed records, including both excha
   assert.equal(sold.ratingCount, 1);
   assert.equal(sold.averageRating, 5);
   await rollback(async (tx) => {
-    await tx.review.update({ where: { orderItemId: fixtures.sale.items[0].id }, data: { rating: 3 } });
+    await tx.review.update({
+      where: { orderItemId: fixtures.sale.items[0].id },
+      data: { rating: 3 },
+    });
     const [stats] = await tx.$queryRaw`SELECT * FROM "BookStatistics" WHERE "bookId" = ${soldId}`;
     assert.equal(stats.averageRating, 3);
     await tx.review.delete({ where: { orderItemId: fixtures.sale.items[0].id } });
     const [empty] = await tx.$queryRaw`SELECT * FROM "BookStatistics" WHERE "bookId" = ${soldId}`;
     assert.equal(empty.ratingCount, 0);
     assert.equal(empty.averageRating, 0);
-    await tx.order.update({ where: { id: fixtures.exchange.id }, data: { status: 'COMPLETED', completedAt: new Date() } });
-    const exchangeBooks = await tx.book.findMany({ where: { publicId: { in: ['demo-exchange-requested', 'demo-exchange-offered'] } } });
+    await tx.order.update({
+      where: { id: fixtures.exchange.id },
+      data: { status: 'COMPLETED', completedAt: new Date() },
+    });
+    const exchangeBooks = await tx.book.findMany({
+      where: { publicId: { in: ['demo-exchange-requested', 'demo-exchange-offered'] } },
+    });
     for (const book of exchangeBooks) {
-      const [result] = await tx.$queryRaw`SELECT * FROM "BookStatistics" WHERE "bookId" = ${book.id}`;
+      const [result] =
+        await tx.$queryRaw`SELECT * FROM "BookStatistics" WHERE "bookId" = ${book.id}`;
       assert.equal(result.completedOrderCount, 1);
     }
   });
 });
 
 test('message sender must belong to the conversation and body must be nonempty', async () => {
-  const conversation = await db.conversation.findFirstOrThrow({ where: { orderId: fixtures.exchange.id } });
-  const data = { conversationId: conversation.id, senderId: fixtures.admin.id, body: 'Not a member' };
-  await assert.rejects(rollback((tx) => tx.message.create({ data })), /foreign key/i);
-  await assert.rejects(rollback((tx) => tx.message.create({ data: { ...data, senderId: fixtures.buyer.id, body: ' ' } })), /constraint/i);
+  const conversation = await db.conversation.findFirstOrThrow({
+    where: { orderId: fixtures.exchange.id },
+  });
+  const data = {
+    conversationId: conversation.id,
+    senderId: fixtures.admin.id,
+    body: 'Not a member',
+  };
+  await assert.rejects(
+    rollback((tx) => tx.message.create({ data })),
+    /foreign key/i,
+  );
+  await assert.rejects(
+    rollback((tx) =>
+      tx.message.create({ data: { ...data, senderId: fixtures.buyer.id, body: ' ' } }),
+    ),
+    /constraint/i,
+  );
 });
 
 test('reports require exactly one target and complete resolution data', async () => {
   const data = { reporterId: fixtures.buyer.id, reason: 'Test' };
-  for (const extra of [{}, { bookId: fixtures.book.id, reportedUserId: fixtures.seller.id }, { bookId: fixtures.book.id, status: 'RESOLVED' }]) {
-    await assert.rejects(rollback((tx) => tx.report.create({ data: { ...data, ...extra } })), /constraint/i);
+  for (const extra of [
+    {},
+    { bookId: fixtures.book.id, reportedUserId: fixtures.seller.id },
+    { bookId: fixtures.book.id, status: 'RESOLVED' },
+  ]) {
+    await assert.rejects(
+      rollback((tx) => tx.report.create({ data: { ...data, ...extra } })),
+      /constraint/i,
+    );
   }
-  await rollback((tx) => tx.report.create({ data: { ...data, reportedUserId: fixtures.seller.id } }));
+  await rollback((tx) =>
+    tx.report.create({ data: { ...data, reportedUserId: fixtures.seller.id } }),
+  );
 });
 
 test('wishlist criteria and match uniqueness prevent empty or duplicate alerts', async () => {
-  await assert.rejects(rollback((tx) => tx.wishlistAlert.create({ data: { userId: fixtures.buyer.id } })), /constraint/i);
+  await assert.rejects(
+    rollback((tx) => tx.wishlistAlert.create({ data: { userId: fixtures.buyer.id } })),
+    /constraint/i,
+  );
   const match = await db.wishlistMatch.findFirstOrThrow();
-  await assert.rejects(rollback((tx) => tx.wishlistMatch.create({ data: { wishlistAlertId: match.wishlistAlertId, bookId: match.bookId } })), /unique/i);
+  await assert.rejects(
+    rollback((tx) =>
+      tx.wishlistMatch.create({
+        data: { wishlistAlertId: match.wishlistAlertId, bookId: match.bookId },
+      }),
+    ),
+    /unique/i,
+  );
 });
 
 test('lookup and historical order deletion cannot erase referenced data', async () => {
-  await assert.rejects(rollback((tx) => tx.genre.delete({ where: { id: fixtures.book.genreId } })), /foreign key/i);
-  await assert.rejects(rollback((tx) => tx.order.delete({ where: { id: fixtures.sale.id } })), /foreign key/i);
-  await assert.rejects(rollback((tx) => tx.book.delete({ where: { id: fixtures.sale.items[0].bookId } })), /foreign key/i);
-  await assert.rejects(rollback((tx) => tx.user.delete({ where: { id: fixtures.seller.id } })), /foreign key/i);
+  await assert.rejects(
+    rollback((tx) => tx.genre.delete({ where: { id: fixtures.book.genreId } })),
+    /foreign key/i,
+  );
+  await assert.rejects(
+    rollback((tx) => tx.order.delete({ where: { id: fixtures.sale.id } })),
+    /foreign key/i,
+  );
+  await assert.rejects(
+    rollback((tx) => tx.book.delete({ where: { id: fixtures.sale.items[0].bookId } })),
+    /foreign key/i,
+  );
+  await assert.rejects(
+    rollback((tx) => tx.user.delete({ where: { id: fixtures.seller.id } })),
+    /foreign key/i,
+  );
 });
 
 test('homepage remains compatible with normalized PostgreSQL data', async () => {
@@ -208,8 +389,12 @@ test('homepage remains compatible with normalized PostgreSQL data', async () => 
   }
   const ejs = require('ejs');
   const html = await ejs.renderFile(path.join(root, '../frontend/views/pages/home.ejs'), {
-    title: 'Bookie', ...data, currentUser: null, csrfToken: '',
-    auth: require('../src/constants/auth'), authText: require('../src/constants/auth-text'),
+    title: 'Bookie',
+    ...data,
+    currentUser: null,
+    csrfToken: '',
+    auth: require('../src/constants/auth'),
+    authText: require('../src/constants/auth-text'),
   });
   assert.match(html, /Bookie/);
 });
@@ -243,15 +428,31 @@ async function authAgent(page = '/login') {
 }
 
 async function registrationData() {
-  const [city, genre, language] = await Promise.all([db.city.findFirstOrThrow(), db.genre.findFirstOrThrow(), db.language.findFirstOrThrow()]);
-  return { firstName: 'Test', lastName: 'Reader', email: `reader-${Date.now()}@example.test`,
-    password: 'Reading123', repeatPassword: 'Reading123', role: 'BUYER', cityId: String(city.id),
-    genreIds: [String(genre.id)], languageIds: [String(language.id)] };
+  const [city, genre, language] = await Promise.all([
+    db.city.findFirstOrThrow(),
+    db.genre.findFirstOrThrow(),
+    db.language.findFirstOrThrow(),
+  ]);
+  return {
+    firstName: 'Test',
+    lastName: 'Reader',
+    email: `reader-${Date.now()}@example.test`,
+    password: 'Reading123',
+    repeatPassword: 'Reading123',
+    role: 'BUYER',
+    cityId: String(city.id),
+    genreIds: [String(genre.id)],
+    languageIds: [String(language.id)],
+  };
 }
 
 async function loggedInAgent() {
   const { agent, csrf } = await authAgent();
-  const response = await agent.post('/login').type('form').send({ email: fixtures.buyer.email, password: 'student123', _csrf: csrf }).expect(303);
+  const response = await agent
+    .post('/login')
+    .type('form')
+    .send({ email: fixtures.buyer.email, password: 'student123', _csrf: csrf })
+    .expect(303);
   return { agent, response };
 }
 
@@ -269,13 +470,30 @@ test('auth forms render required constraints and protect the account page', asyn
 test('registration reports all missing fields on the server', async () => {
   const { agent, csrf } = await authAgent('/register');
   const response = await agent.post('/register').send({ _csrf: csrf }).expect(422);
-  assert.deepEqual(Object.keys(response.body.error.fields).sort(),
-    ['firstName', 'lastName', 'email', 'password', 'repeatPassword', 'role', 'cityId', 'genreIds', 'languageIds'].sort());
+  assert.deepEqual(
+    Object.keys(response.body.error.fields).sort(),
+    [
+      'firstName',
+      'lastName',
+      'email',
+      'password',
+      'repeatPassword',
+      'role',
+      'cityId',
+      'genreIds',
+      'languageIds',
+    ].sort(),
+  );
 });
 
 test('weak and mismatched passwords return constants without echoing passwords', async () => {
   const { agent, csrf } = await authAgent('/register');
-  const data = { ...await registrationData(), password: 'weak', repeatPassword: 'different', _csrf: csrf };
+  const data = {
+    ...(await registrationData()),
+    password: 'weak',
+    repeatPassword: 'different',
+    _csrf: csrf,
+  };
   const response = await agent.post('/register').send(data).expect(422);
   assert.equal(response.body.error.fields.password, EXCEPTIONS.WEAK_PASSWORD);
   assert.equal(response.body.error.fields.repeatPassword, EXCEPTIONS.PASSWORD_MISMATCH);
@@ -286,7 +504,7 @@ test('weak and mismatched passwords return constants without echoing passwords',
 
 test('registration rejects admin roles, invalid lookups and oversized or malformed values', async () => {
   const { agent, csrf } = await authAgent('/register');
-  const data = { ...await registrationData(), _csrf: csrf };
+  const data = { ...(await registrationData()), _csrf: csrf };
   const cases = [
     [{ role: 'ADMIN' }, 'role', EXCEPTIONS.INVALID_ROLE],
     [{ cityId: '999999999' }, 'cityId', EXCEPTIONS.INVALID_CITY],
@@ -294,7 +512,10 @@ test('registration rejects admin roles, invalid lookups and oversized or malform
     [{ genreIds: [{ id: 1 }] }, 'genreIds', EXCEPTIONS.INVALID_INTERESTS],
   ];
   for (const [values, field, message] of cases) {
-    const response = await agent.post('/register').send({ ...data, ...values }).expect(422);
+    const response = await agent
+      .post('/register')
+      .send({ ...data, ...values })
+      .expect(422);
     assert.equal(response.body.error.fields[field], message);
   }
 });
@@ -303,9 +524,16 @@ test('registration creates user, interests, cart and a hashed revocable JWT sess
   const { agent, csrf } = await authAgent('/register');
   const data = await registrationData();
   data.email = `  ${data.email.toUpperCase()}  `;
-  const response = await agent.post('/register').type('form').send({ ...data, _csrf: csrf }).expect(303);
+  const response = await agent
+    .post('/register')
+    .type('form')
+    .send({ ...data, _csrf: csrf })
+    .expect(303);
   assert.equal(response.headers.location, '/account');
-  const user = await db.user.findUniqueOrThrow({ where: { email: data.email.trim().toLowerCase() }, include: { sessions: true, cart: true, genreInterests: true, languageInterests: true } });
+  const user = await db.user.findUniqueOrThrow({
+    where: { email: data.email.trim().toLowerCase() },
+    include: { sessions: true, cart: true, genreInterests: true, languageInterests: true },
+  });
   assert.ok(await require('bcryptjs').compare(data.password, user.passwordHash));
   assert.equal(user.role, 'BUYER');
   assert.equal(user.genreInterests.length, 1);
@@ -328,24 +556,39 @@ test('registration creates user, interests, cart and a hashed revocable JWT sess
 test('duplicate registration does not create partial records', async () => {
   const { agent, csrf } = await authAgent('/register');
   const count = await db.user.count();
-  const response = await agent.post('/register').send({ ...await registrationData(), email: 'STUDENT@BOOKIE.TEST', _csrf: csrf }).expect(409);
+  const response = await agent
+    .post('/register')
+    .send({ ...(await registrationData()), email: 'STUDENT@BOOKIE.TEST', _csrf: csrf })
+    .expect(409);
   assert.equal(response.body.error.fields.email, EXCEPTIONS.EMAIL_IN_USE);
   assert.equal(await db.user.count(), count);
 });
 
 test('unknown email and incorrect password share the same error', async () => {
   const { agent, csrf } = await authAgent();
-  const missing = await agent.post('/login').send({ email: 'missing@example.test', password: 'Reading123', _csrf: csrf }).expect(401);
-  const wrong = await agent.post('/login').send({ email: fixtures.buyer.email, password: 'incorrect', _csrf: csrf }).expect(401);
+  const missing = await agent
+    .post('/login')
+    .send({ email: 'missing@example.test', password: 'Reading123', _csrf: csrf })
+    .expect(401);
+  const wrong = await agent
+    .post('/login')
+    .send({ email: fixtures.buyer.email, password: 'incorrect', _csrf: csrf })
+    .expect(401);
   assert.deepEqual(missing.body, wrong.body);
   assert.equal(missing.body.error.message, EXCEPTIONS.INVALID_CREDENTIALS);
 });
 
 test('logout revokes the JWT and rejects replay', async () => {
   const { agent, response } = await loggedInAgent();
-  const cookie = response.headers['set-cookie'].find((item) => item.startsWith('bookie_token=')).split(';')[0];
+  const cookie = response.headers['set-cookie']
+    .find((item) => item.startsWith('bookie_token='))
+    .split(';')[0];
   const account = await agent.get('/account').expect(200);
-  await agent.post('/logout').type('form').send({ _csrf: csrfFrom(account.text) }).expect(303);
+  await agent
+    .post('/logout')
+    .type('form')
+    .send({ _csrf: csrfFrom(account.text) })
+    .expect(303);
   await agent.get('/api/auth/me').expect(401);
   const replay = await request(app).get('/api/auth/me').set('Cookie', cookie).expect(401);
   assert.equal(replay.body.error.message, EXCEPTIONS.SESSION_REVOKED);
@@ -354,14 +597,23 @@ test('logout revokes the JWT and rejects replay', async () => {
 test('tampered, expired and wrongly targeted JWTs are rejected', async () => {
   const config = require('../src/config/auth');
   const AUTH = require('../src/constants/auth');
-  const options = { subject: String(fixtures.buyer.id), issuer: AUTH.JWT_ISSUER, audience: AUTH.JWT_AUDIENCE, jwtid: 'test', expiresIn: 60 };
+  const options = {
+    subject: String(fixtures.buyer.id),
+    issuer: AUTH.JWT_ISSUER,
+    audience: AUTH.JWT_AUDIENCE,
+    jwtid: 'test',
+    expiresIn: 60,
+  };
   const cases = [
     ['invalid.jwt.token', EXCEPTIONS.INVALID_TOKEN],
     [jwt.sign({}, config.secret, { ...options, expiresIn: -1 }), EXCEPTIONS.SESSION_EXPIRED],
     [jwt.sign({}, config.secret, { ...options, audience: 'other-app' }), EXCEPTIONS.INVALID_TOKEN],
   ];
   for (const [token, message] of cases) {
-    const response = await request(app).get('/api/auth/me').set('Cookie', `bookie_token=${token}`).expect(401);
+    const response = await request(app)
+      .get('/api/auth/me')
+      .set('Cookie', `bookie_token=${token}`)
+      .expect(401);
     assert.equal(response.body.error.message, message);
   }
 });
@@ -373,12 +625,28 @@ test('blocking invalidates existing JWTs and expired temporary blocks restore lo
     const response = await agent.get('/api/auth/me').expect(403);
     assert.equal(response.body.error.message, EXCEPTIONS.ACCOUNT_BLOCKED);
     const { agent: other, csrf } = await authAgent();
-    await other.post('/login').send({ email: fixtures.buyer.email, password: 'student123', _csrf: csrf }).expect(403);
-    await db.user.update({ where: { id: fixtures.buyer.id }, data: { blockedUntil: new Date(Date.now() - 1000) } });
-    await other.post('/login').type('form').send({ email: fixtures.buyer.email, password: 'student123', _csrf: csrf }).expect(303);
-    assert.equal((await db.user.findUniqueOrThrow({ where: { id: fixtures.buyer.id } })).status, 'ACTIVE');
+    await other
+      .post('/login')
+      .send({ email: fixtures.buyer.email, password: 'student123', _csrf: csrf })
+      .expect(403);
+    await db.user.update({
+      where: { id: fixtures.buyer.id },
+      data: { blockedUntil: new Date(Date.now() - 1000) },
+    });
+    await other
+      .post('/login')
+      .type('form')
+      .send({ email: fixtures.buyer.email, password: 'student123', _csrf: csrf })
+      .expect(303);
+    assert.equal(
+      (await db.user.findUniqueOrThrow({ where: { id: fixtures.buyer.id } })).status,
+      'ACTIVE',
+    );
   } finally {
-    await db.user.update({ where: { id: fixtures.buyer.id }, data: { status: 'ACTIVE', blockedUntil: null } });
+    await db.user.update({
+      where: { id: fixtures.buyer.id },
+      data: { status: 'ACTIVE', blockedUntil: null },
+    });
   }
 });
 
@@ -387,39 +655,67 @@ test('inactive, archived and temporarily blocked accounts return clear errors af
   const cases = [
     [{ status: 'INACTIVE' }, EXCEPTIONS.ACCOUNT_INACTIVE],
     [{ status: 'ARCHIVED', archivedAt: new Date() }, EXCEPTIONS.ACCOUNT_ARCHIVED],
-    [{ status: 'BLOCKED', blockedUntil: new Date(Date.now() + 86400000), archivedAt: null }, EXCEPTIONS.ACCOUNT_TEMPORARILY_BLOCKED],
+    [
+      { status: 'BLOCKED', blockedUntil: new Date(Date.now() + 86400000), archivedAt: null },
+      EXCEPTIONS.ACCOUNT_TEMPORARILY_BLOCKED,
+    ],
   ];
   try {
     for (const [data, message] of cases) {
       await db.user.update({ where: { id: fixtures.buyer.id }, data });
-      const response = await agent.post('/login').send({ email: fixtures.buyer.email, password: 'student123', _csrf: csrf }).expect(403);
+      const response = await agent
+        .post('/login')
+        .send({ email: fixtures.buyer.email, password: 'student123', _csrf: csrf })
+        .expect(403);
       assert.equal(response.body.error.message, message);
     }
   } finally {
-    await db.user.update({ where: { id: fixtures.buyer.id }, data: { status: 'ACTIVE', blockedUntil: null, archivedAt: null } });
+    await db.user.update({
+      where: { id: fixtures.buyer.id },
+      data: { status: 'ACTIVE', blockedUntil: null, archivedAt: null },
+    });
   }
 });
 
 test('CSRF protection covers login, registration and logout', async () => {
   const { agent } = await authAgent();
-  const response = await agent.post('/login').send({ email: fixtures.buyer.email, password: 'student123' }).expect(403);
+  const response = await agent
+    .post('/login')
+    .send({ email: fixtures.buyer.email, password: 'student123' })
+    .expect(403);
   assert.equal(response.body.error.message, EXCEPTIONS.CSRF_INVALID);
-  await agent.post('/register').send(await registrationData()).expect(403);
+  await agent
+    .post('/register')
+    .send(await registrationData())
+    .expect(403);
   const { agent: loggedIn } = await loggedInAgent();
   await loggedIn.post('/logout').send({}).expect(403);
   await loggedIn.get('/api/auth/me').expect(200);
 });
 
 test('malformed and oversized requests return controlled exceptions', async () => {
-  const malformed = await request(app).post('/login').set('Content-Type', 'application/json').send('{').expect(400);
+  const malformed = await request(app)
+    .post('/login')
+    .set('Content-Type', 'application/json')
+    .send('{')
+    .expect(400);
   assert.equal(malformed.body.error.message, EXCEPTIONS.BAD_REQUEST);
-  const oversized = await request(app).post('/register').send({ password: 'a'.repeat(20000) }).expect(413);
+  const oversized = await request(app)
+    .post('/register')
+    .send({ password: 'a'.repeat(20000) })
+    .expect(413);
   assert.equal(oversized.body.error.message, EXCEPTIONS.PAYLOAD_TOO_LARGE);
 });
 
 test('role middleware denies an authenticated buyer administrator permissions', () => {
   let exception;
-  require('../src/middleware/authorize.middleware').authorize('ADMIN')({ user: { role: 'BUYER' } }, {}, (error) => { exception = error; });
+  require('../src/middleware/authorize.middleware').authorize('ADMIN')(
+    { user: { role: 'BUYER' } },
+    {},
+    (error) => {
+      exception = error;
+    },
+  );
   assert.equal(exception.status, 403);
   assert.equal(exception.message, EXCEPTIONS.FORBIDDEN);
 });
@@ -427,9 +723,15 @@ test('role middleware denies an authenticated buyer administrator permissions', 
 test('failed login attempts are rate limited with a retry header', async () => {
   const { agent, csrf } = await authAgent();
   for (let index = 0; index < require('../src/constants/auth').LOGIN_LIMIT; index += 1) {
-    await agent.post('/login').send({ email: 'missing@example.test', password: 'Wrong123', _csrf: csrf }).expect(401);
+    await agent
+      .post('/login')
+      .send({ email: 'missing@example.test', password: 'Wrong123', _csrf: csrf })
+      .expect(401);
   }
-  const response = await agent.post('/login').send({ email: 'missing@example.test', password: 'Wrong123', _csrf: csrf }).expect(429);
+  const response = await agent
+    .post('/login')
+    .send({ email: 'missing@example.test', password: 'Wrong123', _csrf: csrf })
+    .expect(429);
   assert.equal(response.body.error.message, EXCEPTIONS.TOO_MANY_ATTEMPTS);
   assert.ok(response.headers['retry-after']);
 });
@@ -438,9 +740,15 @@ test('registration enforces uppercase and number independently of password lengt
   const { validateRegistration } = require('../src/validators/auth.validator');
   const data = await registrationData();
   for (const password of ['reading123', 'ReadingOnly', '12345678', 'Aa1']) {
-    assert.throws(() => validateRegistration({ ...data, password, repeatPassword: password }), (error) => error.fields.password === EXCEPTIONS.WEAK_PASSWORD);
+    assert.throws(
+      () => validateRegistration({ ...data, password, repeatPassword: password }),
+      (error) => error.fields.password === EXCEPTIONS.WEAK_PASSWORD,
+    );
   }
-  assert.equal(validateRegistration({ ...data, password: 'Abcdefg1', repeatPassword: 'Abcdefg1' }).password, 'Abcdefg1');
+  assert.equal(
+    validateRegistration({ ...data, password: 'Abcdefg1', repeatPassword: 'Abcdefg1' }).password,
+    'Abcdefg1',
+  );
 });
 
 test('deactivated registration options are rejected without creating a user', async () => {
@@ -449,7 +757,10 @@ test('deactivated registration options are rejected without creating a user', as
   const genreId = Number(data.genreIds[0]);
   await db.genre.update({ where: { id: genreId }, data: { isActive: false } });
   try {
-    const response = await agent.post('/register').send({ ...data, _csrf: csrf }).expect(422);
+    const response = await agent
+      .post('/register')
+      .send({ ...data, _csrf: csrf })
+      .expect(422);
     assert.equal(response.body.error.fields.genreIds, EXCEPTIONS.INVALID_INTERESTS);
     assert.equal(await db.user.count({ where: { email: data.email } }), 0);
   } finally {
@@ -464,9 +775,19 @@ test('database failure and unexpected exceptions return safe centralized message
   const originalLog = console.error;
   console.error = () => {};
   try {
-    for (const [code, status, message] of [['P1001', 503, EXCEPTIONS.DATABASE_UNAVAILABLE], ['OTHER', 500, EXCEPTIONS.INTERNAL_ERROR]]) {
-      repository.findByEmail = async () => { const error = new Error('private implementation details'); error.code = code; throw error; };
-      const response = await agent.post('/login').send({ email: fixtures.buyer.email, password: 'student123', _csrf: csrf }).expect(status);
+    for (const [code, status, message] of [
+      ['P1001', 503, EXCEPTIONS.DATABASE_UNAVAILABLE],
+      ['OTHER', 500, EXCEPTIONS.INTERNAL_ERROR],
+    ]) {
+      repository.findByEmail = async () => {
+        const error = new Error('private implementation details');
+        error.code = code;
+        throw error;
+      };
+      const response = await agent
+        .post('/login')
+        .send({ email: fixtures.buyer.email, password: 'student123', _csrf: csrf })
+        .expect(status);
       assert.equal(response.body.error.message, message);
       assert.ok(!JSON.stringify(response.body).includes('private implementation details'));
     }
@@ -477,12 +798,23 @@ test('database failure and unexpected exceptions return safe centralized message
 });
 
 test('production auth cookies are secure and missing secrets fail explicitly', () => {
-  const code = "const c=require('./src/config/auth'); process.stdout.write(JSON.stringify({secure:c.cookieOptions.secure,name:c.tokenCookie,httpOnly:c.cookieOptions.httpOnly}))";
-  const secure = JSON.parse(execFileSync(process.execPath, ['-e', code], { cwd: root, env: { ...process.env, NODE_ENV: 'production' }, encoding: 'utf8' }));
+  const code =
+    "const c=require('./src/config/auth'); process.stdout.write(JSON.stringify({secure:c.cookieOptions.secure,name:c.tokenCookie,httpOnly:c.cookieOptions.httpOnly}))";
+  const secure = JSON.parse(
+    execFileSync(process.execPath, ['-e', code], {
+      cwd: root,
+      env: { ...process.env, NODE_ENV: 'production' },
+      encoding: 'utf8',
+    }),
+  );
   assert.equal(secure.secure, true);
   assert.equal(secure.httpOnly, true);
   assert.equal(secure.name, '__Host-bookie_token');
-  assert.throws(() => execFileSync(process.execPath, ['-e', "require('./src/config/auth')"], {
-    cwd: root, env: { ...process.env, JWT_SECRET: '' }, stdio: 'pipe',
-  }));
+  assert.throws(() =>
+    execFileSync(process.execPath, ['-e', "require('./src/config/auth')"], {
+      cwd: root,
+      env: { ...process.env, JWT_SECRET: '' },
+      stdio: 'pipe',
+    }),
+  );
 });

@@ -1,0 +1,11 @@
+const express = require('express');
+const controller = require('../controllers/exchange.controller');
+const { requireAuthentication } = require('../middleware/authorize.middleware');
+const { protectCsrf } = require('../middleware/csrf.middleware');
+const router = express.Router();
+router.get('/exchange-books', requireAuthentication, controller.inventory);
+router.get('/exchange-books/:id/edit', requireAuthentication, controller.editForm);
+router.post('/exchange-books/:id/edit', requireAuthentication, protectCsrf, controller.edit);
+router.post('/exchange-books/:id/archive', requireAuthentication, protectCsrf, controller.archive);
+router.post('/exchange-books/:id/delete', requireAuthentication, protectCsrf, controller.remove);
+module.exports = router;

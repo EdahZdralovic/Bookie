@@ -24,11 +24,17 @@ async function main() {
   await admin.$executeRawUnsafe(`CREATE DATABASE "${databaseName}"`);
   created = true;
   process.env.DATABASE_URL = databaseUrl.href;
-  execFileSync(process.execPath, [require.resolve('prisma/build/index.js'), 'migrate', 'deploy'], { cwd: root, env: process.env, stdio: 'pipe' });
+  execFileSync(process.execPath, [require.resolve('prisma/build/index.js'), 'migrate', 'deploy'], {
+    cwd: root,
+    env: process.env,
+    stdio: 'pipe',
+  });
   await require('../prisma/seed').seedDatabase(db);
   const app = require('../src/app');
   appDatabase = require('../src/config/database');
-  server = await new Promise((resolve) => { const listener = app.listen(0, '127.0.0.1', () => resolve(listener)); });
+  server = await new Promise((resolve) => {
+    const listener = app.listen(0, '127.0.0.1', () => resolve(listener));
+  });
   const base = `http://127.0.0.1:${server.address().port}`;
   const screenshots = path.join(root, '.local', 'screenshots');
   fs.mkdirSync(screenshots, { recursive: true });
@@ -42,15 +48,24 @@ async function main() {
   await page.goto(`${base}/register`);
   await page.screenshot({ path: path.join(screenshots, 'register-desktop.png'), fullPage: true });
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
-  assert.equal(await page.locator('#firstName-error').textContent(), require('../src/constants/exceptions').REQUIRED_FIELD);
+  assert.equal(
+    await page.locator('#firstName-error').textContent(),
+    require('../src/constants/exceptions').REQUIRED_FIELD,
+  );
   await page.locator('#firstName').fill('Browser');
   await page.locator('#lastName').fill('Reader');
   await page.locator('#email').fill('browser-reader@example.test');
   await page.locator('#password').fill('weak');
   await page.locator('#repeatPassword').fill('different');
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
-  assert.equal(await page.locator('#password-error').textContent(), require('../src/constants/exceptions').WEAK_PASSWORD);
-  assert.equal(await page.locator('#repeatPassword-error').textContent(), require('../src/constants/exceptions').PASSWORD_MISMATCH);
+  assert.equal(
+    await page.locator('#password-error').textContent(),
+    require('../src/constants/exceptions').WEAK_PASSWORD,
+  );
+  assert.equal(
+    await page.locator('#repeatPassword-error').textContent(),
+    require('../src/constants/exceptions').PASSWORD_MISMATCH,
+  );
   await page.locator('#password').fill('Browser123');
   await page.locator('#repeatPassword').fill('Browser123');
   await page.locator('[data-toggle="password"]').click();
@@ -74,19 +89,31 @@ async function main() {
   await page.locator('#password').fill('Wrong123');
   await page.getByRole('button', { name: 'Log in', exact: true }).click();
   await page.waitForSelector('[data-form-alert]:not([hidden])');
-  assert.equal(await page.locator('[data-form-message]').textContent(), require('../src/constants/exceptions').INVALID_CREDENTIALS);
+  assert.equal(
+    await page.locator('[data-form-message]').textContent(),
+    require('../src/constants/exceptions').INVALID_CREDENTIALS,
+  );
   assert.equal(await page.locator('#password').inputValue(), '');
   await page.screenshot({ path: path.join(screenshots, 'login-error.png'), fullPage: true });
   await page.locator('#password').fill('Browser123');
   await page.getByRole('button', { name: 'Log in', exact: true }).click();
   await page.waitForURL(`${base}/account`);
   await context.close();
-  const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 1 });
+  const mobile = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    deviceScaleFactor: 1,
+  });
   const mobilePage = await mobile.newPage();
   for (const route of ['login', 'register']) {
     await mobilePage.goto(`${base}/${route}`);
-    assert.ok(await mobilePage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
-    await mobilePage.screenshot({ path: path.join(screenshots, `${route}-mobile.png`), fullPage: true });
+    assert.ok(
+      await mobilePage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    );
+    await mobilePage.screenshot({
+      path: path.join(screenshots, `${route}-mobile.png`),
+      fullPage: true,
+    });
   }
   await mobile.close();
   const noScript = await browser.newContext({ javaScriptEnabled: false });
@@ -107,14 +134,22 @@ async function main() {
   await sellerPage.goto(`${base}/books/new`);
   assert.match(await sellerPage.locator('h1').textContent(), /Give your book/);
   await sellerPage.locator('.workflow-form button[type="submit"]').click();
-  assert.equal(await sellerPage.locator('#title + .field-error').textContent(), require('../src/constants/exceptions').BOOK_TITLE_REQUIRED);
+  assert.equal(
+    await sellerPage.locator('#title + .field-error').textContent(),
+    require('../src/constants/exceptions').BOOK_TITLE_REQUIRED,
+  );
   await sellerPage.locator('#title').fill('Browser Book');
   await sellerPage.locator('#author').fill('Browser Author');
   await sellerPage.locator('#publisher').fill('Browser Press');
   await sellerPage.locator('#publicationYear').fill('2024');
   await sellerPage.locator('#description').fill('A browser-created book for validation.');
   await sellerPage.locator('#price').fill('12.50');
-  for (const id of ['genreId', 'languageId', 'conditionId', 'cityId']) await sellerPage.locator(`#${id} option`).nth(1).getAttribute('value').then((value) => sellerPage.locator(`#${id}`).selectOption(value));
+  for (const id of ['genreId', 'languageId', 'conditionId', 'cityId'])
+    await sellerPage
+      .locator(`#${id} option`)
+      .nth(1)
+      .getAttribute('value')
+      .then((value) => sellerPage.locator(`#${id}`).selectOption(value));
   await sellerPage.locator('.workflow-form button[type="submit"]').click();
   await sellerPage.waitForURL(`${base}/account?bookCreated=1`, { timeout: 5000 });
   assert.match(await sellerPage.locator('[role="status"]').textContent(), /successfully/);
@@ -123,15 +158,22 @@ async function main() {
   await sellerPage.close();
   await seller.close();
   assert.deepEqual(errors, []);
-  console.log('Browser checks passed: desktop/mobile layouts, client validation, registration, JWT cookie, login/logout, server errors, and login without JavaScript.');
+  console.log(
+    'Browser checks passed: desktop/mobile layouts, client validation, registration, JWT cookie, login/logout, server errors, and login without JavaScript.',
+  );
   console.log(`Screenshots: ${screenshots}`);
 }
 
-main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(async () => {
-  if (browser) await browser.close();
-  if (server) await new Promise((resolve) => server.close(resolve));
-  if (appDatabase) await appDatabase.$disconnect();
-  await db.$disconnect();
-  if (created) await admin.$executeRawUnsafe(`DROP DATABASE "${databaseName}"`);
-  await admin.$disconnect();
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    if (browser) await browser.close();
+    if (server) await new Promise((resolve) => server.close(resolve));
+    if (appDatabase) await appDatabase.$disconnect();
+    await db.$disconnect();
+    if (created) await admin.$executeRawUnsafe(`DROP DATABASE "${databaseName}"`);
+    await admin.$disconnect();
+  });

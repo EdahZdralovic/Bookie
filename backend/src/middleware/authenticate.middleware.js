@@ -13,7 +13,10 @@ async function authenticate(req, res, next) {
     res.locals.currentUser = req.user;
     return next();
   } catch (error) {
-    if (error instanceof AppException && [HTTP.UNAUTHORIZED, HTTP.FORBIDDEN].includes(error.status)) {
+    if (
+      error instanceof AppException &&
+      [HTTP.UNAUTHORIZED, HTTP.FORBIDDEN].includes(error.status)
+    ) {
       req.authError = error;
       res.clearCookie(config.tokenCookie, config.cookieOptions);
       delete req.cookies[config.tokenCookie];

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Catalog management — Bookie</title>
+<link rel="stylesheet" href="/css/styles.css" />
+<link rel="stylesheet" href="/css/auth.css" />
+</head>
+  <body class="account-body">
+<main class="form-page">
+<a class="auth-back" href="/admin">← Admin panel</a>
+<h1>
+<%= type.charAt(0).toUpperCase() + type.slice(1) %>
+</h1>
+<form class="workflow-form" method="post" action="/admin/catalog/<%= type %>">
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<div class="auth-field">
+<label for="name">Name</label>
+<input id="name" name="name" required>
+<% if (type === 'languages') { %>
+<label for="code">Code</label>
+<input id="code" name="code" maxlength="5">
+<% } %>
+</div>
+<button class="auth-submit" type="submit">Add item <span>↗</span>
+</button>
+</form>
+<div class="seller-book-list">
+<% items.forEach((item) => { %>
+<form class="seller-book-row" method="post" action="/admin/catalog/<%= type %>/<%= item.id %>">
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<input name="name" value="<%= item.name %>" required>
+<% if (item.isActive !== undefined) { %>
+<label>
+<input type="checkbox" name="isActive" <%= item.isActive ? 'checked' : '' %>> Active</label>
+<% } %>
+<button class="filter-button" type="submit">Save</button>
+</form>
+<% }) %>
+</div>
+</main>
+</body>
+</html>

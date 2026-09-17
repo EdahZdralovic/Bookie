@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verify email — Bookie</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/auth.css">
+</head>
+<body class="auth-body">
+<main class="auth-main">
+<div class="auth-content">
+<p class="auth-step">EMAIL VERIFICATION</p>
+<h1>Check your inbox.</h1>
+<p class="auth-description">Enter the six-digit code sent to <strong>
+<%= email %>
+</strong>. Only the latest code is valid.</p>
+<% if (formError) { %>
+<div class="form-alert" role="alert">
+<strong>Verification failed</strong>
+<p>
+<%= formError %>
+</p>
+</div>
+<% } %>
+<form class="auth-form" method="post" action="/verify-email">
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<input type="hidden" name="email" value="<%= email %>">
+<label class="auth-field">
+<span>Verification code</span>
+<input name="code" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required>
+</label>
+<button class="auth-submit" type="submit">Verify email <span>↗</span>
+</button>
+</form>
+<form class="auth-form" method="post" action="/verify-email/resend">
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<input type="hidden" name="email" value="<%= email %>">
+<button id="resend-code" class="secondary-action" type="submit" <%= resendAfter > 0 ? 'disabled' : '' %>>Resend code <span id="resend-timer"><%= resendAfter > 0 ? `(${resendAfter}s)` : '' %></span>
+</button>
+</form>
+</div>
+</main>
+<script>const button=document.getElementById('resend-code');let seconds=<%= resendAfter %>;const update=()=>{button.disabled=seconds>0;document.getElementById('resend-timer').textContent=seconds>0?`(${seconds}s)`:'';if(seconds>0)seconds-=1;};update();if(seconds>0)setInterval(update,1000);</script>
+</body>
+</html>

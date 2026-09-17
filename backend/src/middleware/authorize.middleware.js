@@ -9,7 +9,8 @@ function requireAuthentication(req, res, next) {
 
 function authorize(...roles) {
   return (req, res, next) => {
-    if (!req.user) return next(req.authError || new AppException('AUTH_REQUIRED', HTTP.UNAUTHORIZED));
+    if (!req.user)
+      return next(req.authError || new AppException('AUTH_REQUIRED', HTTP.UNAUTHORIZED));
     if (!roles.includes(req.user.role)) return next(new AppException('FORBIDDEN', HTTP.FORBIDDEN));
     return next();
   };

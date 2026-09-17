@@ -1,0 +1,8 @@
+backend/node_modules/
+backend/.env
+backend/prisma/*.db
+backend/prisma/*.db-journal
+backend/.local/
+frontend/public/users/*
+!.gitkeep
+.env

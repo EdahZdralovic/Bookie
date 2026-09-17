@@ -12,10 +12,13 @@ const password = 'bookie_local_only';
 const action = process.argv[2] || 'start';
 if (!['start', 'stop', 'status'].includes(action)) throw new Error('Use start, stop or status.');
 
-const candidates = [process.env.PG_BIN, '/opt/homebrew/opt/postgresql@16/bin',
-  '/usr/local/opt/postgresql@16/bin'].filter(Boolean);
+const candidates = [
+  process.env.PG_BIN,
+  '/opt/homebrew/opt/postgresql@16/bin',
+  '/usr/local/opt/postgresql@16/bin',
+].filter(Boolean);
 const pgBin = candidates.find((dir) => fs.existsSync(path.join(dir, 'pg_ctl')));
-const executable = (name) => pgBin ? path.join(pgBin, name) : name;
+const executable = (name) => (pgBin ? path.join(pgBin, name) : name);
 function run(name, args, options = {}) {
   const result = spawnSync(executable(name), args, { encoding: 'utf8', ...options });
   if (result.error) throw result.error;
@@ -38,9 +41,20 @@ function main() {
     const passwordFile = path.join(local, 'init-password');
     fs.writeFileSync(passwordFile, password, { mode: 0o600 });
     try {
-      console.log(run('initdb', ['-D', data, '--username', user, '--encoding=UTF8',
-        '--locale=C', '--auth-local=trust', '--auth-host=scram-sha-256',
-        '--pwfile', passwordFile]));
+      console.log(
+        run('initdb', [
+          '-D',
+          data,
+          '--username',
+          user,
+          '--encoding=UTF8',
+          '--locale=C',
+          '--auth-local=trust',
+          '--auth-host=scram-sha-256',
+          '--pwfile',
+          passwordFile,
+        ]),
+      );
     } finally {
       fs.unlinkSync(passwordFile);
     }
@@ -48,15 +62,33 @@ function main() {
   const status = spawnSync(executable('pg_ctl'), ['status', '-D', data]);
   if (status.status !== 0) {
     if (socket.includes('"')) throw new Error('The workspace path must not contain double quotes.');
-    console.log(run('pg_ctl', ['start', '-D', data, '-l', path.join(local, 'postgres.log'),
-      '-o', `-h 127.0.0.1 -p ${port} -k "${socket}"`, '-w']));
+    console.log(
+      run('pg_ctl', [
+        'start',
+        '-D',
+        data,
+        '-l',
+        path.join(local, 'postgres.log'),
+        '-o',
+        `-h 127.0.0.1 -p ${port} -k "${socket}"`,
+        '-w',
+      ]),
+    );
   }
   const connection = ['-h', '127.0.0.1', '-p', port, '-U', user];
   const env = { ...process.env, PGPASSWORD: password };
-  const exists = run('psql', [...connection, '-d', 'postgres', '-tAc',
-    "SELECT 1 FROM pg_database WHERE datname = 'bookie'"], { env });
+  const exists = run(
+    'psql',
+    [...connection, '-d', 'postgres', '-tAc', "SELECT 1 FROM pg_database WHERE datname = 'bookie'"],
+    { env },
+  );
   if (exists !== '1') run('createdb', [...connection, 'bookie'], { env });
   console.log(`Bookie PostgreSQL is ready at 127.0.0.1:${port}, database bookie.`);
 }
 
-try { main(); } catch (error) { console.error(error.message); process.exitCode = 1; }
+try {
+  main();
+} catch (error) {
+  console.error(error.message);
+  process.exitCode = 1;
+}

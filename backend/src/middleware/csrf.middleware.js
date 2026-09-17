@@ -6,13 +6,20 @@ const AppException = require('../exceptions/app.exception');
 const { hashToken } = require('../utils/token');
 
 function signature(nonce, req) {
-  const binding = typeof req.cookies[config.tokenCookie] === 'string' ? hashToken(req.cookies[config.tokenCookie]) : '';
+  const binding =
+    typeof req.cookies[config.tokenCookie] === 'string'
+      ? hashToken(req.cookies[config.tokenCookie])
+      : '';
   return crypto.createHmac('sha256', config.secret).update(`${nonce}:${binding}`).digest('hex');
 }
 
 function equal(left, right) {
-  return typeof left === 'string' && typeof right === 'string' && left.length === right.length
-    && crypto.timingSafeEqual(Buffer.from(left), Buffer.from(right));
+  return (
+    typeof left === 'string' &&
+    typeof right === 'string' &&
+    left.length === right.length &&
+    crypto.timingSafeEqual(Buffer.from(left), Buffer.from(right))
+  );
 }
 
 function valid(token, req) {
@@ -35,7 +42,12 @@ function provideCsrf(req, res, next) {
 function protectCsrf(req, res, next) {
   const submitted = req.body?._csrf || req.get('x-csrf-token');
   const cookie = req.cookies[config.csrfCookie];
-  if (!valid(cookie, req) || typeof submitted !== 'string' || !/^[a-f0-9]{64}\.[a-f0-9]{64}$/.test(submitted) || !equal(cookie, submitted)) {
+  if (
+    !valid(cookie, req) ||
+    typeof submitted !== 'string' ||
+    !/^[a-f0-9]{64}\.[a-f0-9]{64}$/.test(submitted) ||
+    !equal(cookie, submitted)
+  ) {
     return next(new AppException('CSRF_INVALID', HTTP.FORBIDDEN));
   }
   return next();

@@ -26,4 +26,9 @@ async function findBookOptions(db = prisma) {
   return { cities, genres, languages, conditions };
 }
 
-module.exports = { findActiveGenres, findActiveLanguages, findRegistrationOptions, findBookOptions };
+module.exports = {
+  findActiveGenres,
+  findActiveLanguages,
+  findRegistrationOptions,
+  findBookOptions,
+};
