@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Orders — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/auth.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <h1>Orders</h1>
+      <% if (formError) { %>
+        <p class="form-alert" role="alert"><%= formError %></p>
+      <% } %>
+
+      <div class="seller-book-list">
+        <% orders.forEach((order) => { %>
+        <article class="seller-book-row">
+          <div class="seller-book-info">
+            <strong><%= order.orderNumber %></strong>
+            <% order.items.forEach((item) => { %>
+              <a href="/books/<%= item.bookId %>"><%= item.bookTitle %></a>
+            <% }) %>
+            <a href="/chat/new?userId=<%= currentUser.id === order.buyerId ? order.sellerId : order.buyerId %>"><%= strings.WORKFLOW.MESSAGE %></a>
+            <span>
+              <%= order.items.length %>
+              item(s) ·
+              <%= order.status %>
+              ·
+              <%= new Date(order.createdAt).toLocaleDateString('en-US') %>
+            </span>
+          </div>
+          <strong>
+            <%= Number(order.totalAmount).toFixed(2) %>
+            BAM</strong>
+          <% if (currentUser.id === order.sellerId && order.status === 'PENDING') { %>
+          <form method="post" action="/orders/<%= order.id %>/status">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button name="status" value="ACCEPTED">Accept</button>
+            <button name="status" value="REJECTED">Reject</button>
+          </form>
+          <% } else if (currentUser.id === order.sellerId && order.status === 'ACCEPTED') { %>
+          <form method="post" action="/orders/<%= order.id %>/status">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button name="status" value="COMPLETED">Complete</button>
+          </form>
+          <% } else if (currentUser.id === order.buyerId && order.status === 'PENDING') { %>
+          <form method="post" action="/orders/<%= order.id %>/status">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button name="status" value="CANCELLED">Cancel</button>
+          </form>
+          <% } %>
+          <% if (currentUser.id === order.buyerId && order.status === 'COMPLETED') {
+          order.items.filter((item) => !item.review || item.review.editableUntil > new Date()).forEach((item) => { %>
+          <form class="workflow-form" method="post" action="/reviews/<%= item.review ? item.review.id + '/edit' : item.id %>">
+            <strong><%= item.bookTitle %></strong>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <select name="rating" required>
+              <option value="">Rating</option>
+              <% [1,2,3,4,5].forEach((rating) => { %>
+              <option value="<%= rating %>" <%= item.review?.rating === rating ? 'selected' : '' %>><%= rating %>/5</option>
+              <% }) %>
+            </select>
+            <input name="comment" placeholder="Comment" value="<%= item.review?.comment || '' %>" maxlength="5000" />
+            <button class="filter-button" type="submit"><%= item.review ? strings.WORKFLOW.EDIT_REVIEW : strings.WORKFLOW.REVIEW %></button>
+            <% if (item.review) { %>
+              <button class="filter-button" type="submit" formaction="/reviews/<%= item.review.id %>/delete" formnovalidate><%= strings.WORKFLOW.DELETE_REVIEW %></button>
+            <% } %>
+          </form>
+          <% }) } %>
+        </article>
+        <% }) %>
+        <% if (!orders.length) { %>
+        <p class="field-hint">No orders yet.</p>
+        <% } %>
+      </div>
+    </main>
+  </body>
+</html>

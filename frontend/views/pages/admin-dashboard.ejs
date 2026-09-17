@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin panel — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/auth.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <p class="auth-step">SYSTEM ADMINISTRATION</p>
+      <h1>Admin panel</h1>
+      <p class="auth-description">Manage accounts, catalog data, reports and system messages.</p>
+      <div class="admin-actions">
+<a class="secondary-action" href="/statistics">Statistics</a>
+<a class="secondary-action" href="/admin/reports">Reports</a>
+<a class="secondary-action" href="/admin/catalog/genres">Genres</a>
+<a class="secondary-action" href="/admin/catalog/languages">Languages</a>
+<a class="secondary-action" href="/admin/catalog/cities">Cities</a>
+<a class="secondary-action" href="/admin/catalog/conditions">Conditions</a>
+<a class="secondary-action" href="/admin/catalog/tags">Tags</a>
+</div>
+      <section class="seller-books">
+<h2>Users</h2>
+<form class="listing-filters" method="get" action="/admin">
+<input name="search" placeholder="Search name or email" value="<%= query.search || '' %>">
+<select name="role">
+<option value="">All roles</option>
+<option value="BUYER" <%= query.role === 'BUYER' ? 'selected' : '' %>>Buyers</option>
+<option value="SELLER" <%= query.role === 'SELLER' ? 'selected' : '' %>>Sellers</option>
+</select>
+<select name="status">
+<option value="">All statuses</option>
+<option value="ACTIVE">Active</option>
+<option value="BLOCKED">Blocked</option>
+<option value="INACTIVE">Inactive</option>
+<option value="ARCHIVED">Archived</option>
+</select>
+<button class="filter-button" type="submit">Filter</button>
+</form>
+<div class="seller-book-list">
+<% users.forEach((user) => { %>
+<article class="seller-book-row">
+<div class="seller-book-info">
+<strong>
+<%= user.firstName %> <%= user.lastName %>
+</strong>
+<span>
+<%= user.email %> · <%= user.role %> · <%= user._count.books %> books</span>
+</div>
+<form method="post" action="/admin/users/<%= user.id %>/status">
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<select name="status">
+<option value="ACTIVE">Active</option>
+<option value="INACTIVE">Inactive</option>
+<option value="BLOCKED">Blocked</option>
+<option value="ARCHIVED">Archived</option>
+</select>
+<select name="duration">
+<option value="permanent">Permanent</option>
+<option value="15">15 days</option>
+</select>
+<button class="filter-button" type="submit">Save</button>
+</form>
+<details>
+<summary>Message</summary>
+<form method="post" action="/admin/users/<%= user.id %>/notify">
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<input name="title" placeholder="Title" required>
+<textarea name="body" placeholder="Message" required>
+</textarea>
+<input name="link" placeholder="Optional link">
+<button class="filter-button" type="submit">Send</button>
+</form>
+</details>
+</article>
+<% }) %>
+</div>
+</section>
+<section class="seller-books">
+<h2>Open reports</h2>
+<% reports.forEach((report) => { %>
+<p>
+<strong>
+<%= report.reason %>
+</strong> — <%= report.book?.title || report.reportedUser?.email || 'User report' %>
+</p>
+<% }) %>
+<a class="secondary-action" href="/admin/reports">Manage reports</a>
+</section>
+    </main>
+  </body>
+</html>

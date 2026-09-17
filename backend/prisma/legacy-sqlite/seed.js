@@ -23,23 +23,23 @@ async function main() {
 
   const genres = {};
   for (const genre of [
-    ['Stručna literatura', 'strucna-literatura'],
+    ['Professional literature', 'professional-literature'],
     ['Roman', 'roman'],
-    ['Naučna fantastika', 'naucna-fantastika'],
+    ['Science fiction', 'science-fiction'],
     ['Strip', 'strip'],
-    ['Udžbenik', 'udzbenik'],
-    ['Dječija knjiga', 'djecija-knjiga'],
+    ['Textbook', 'textbook'],
+    ['Children’s book', 'children-book'],
   ]) {
     genres[genre[1]] = await upsertLookup('genre', { slug: genre[1] }, { name: genre[0], slug: genre[1] }, { name: genre[0] });
   }
 
   const languages = {};
-  for (const language of [['Bosanski', 'bs'], ['Engleski', 'en'], ['Njemački', 'de']]) {
+  for (const language of [['Bosnian', 'bs'], ['English', 'en'], ['German', 'de']]) {
     languages[language[1]] = await upsertLookup('language', { code: language[1] }, { name: language[0], code: language[1] }, { name: language[0] });
   }
 
   const conditions = {};
-  for (const [index, condition] of ['Nova', 'Kao nova', 'Dobra', 'Korištena', 'Oštećena'].entries()) {
+  for (const [index, condition] of ['New', 'Like new', 'Good', 'Used', 'Damaged'].entries()) {
     const slug = ['nova', 'kao-nova', 'dobra', 'koristena', 'ostecena'][index];
     conditions[slug] = await upsertLookup('bookCondition', { slug }, { name: condition, slug, sortOrder: index + 1 }, { name: condition, sortOrder: index + 1 });
   }
@@ -53,25 +53,25 @@ async function main() {
     name: 'Univerzitetska biblioteka', address: 'Zmaja od Bosne 8B', type: 'Biblioteka', cityId: sarajevo.id,
   });
   await upsertLookup('pickupPoint', { cityId_name: { cityId: sarajevo.id, name: 'Studentski dom Bjelave' } }, {
-    name: 'Studentski dom Bjelave', address: 'Bardakčije 1', type: 'Studentski dom', cityId: sarajevo.id,
+    name: 'Bjelave Student Residence', address: 'Bardakčije 1', type: 'Student residence', cityId: sarajevo.id,
   });
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@bookie.ba' },
     update: { role: 'ADMIN', status: 'ACTIVE', passwordHash: adminPasswordHash },
-    create: { name: 'Glavni Administrator', firstName: 'Glavni', lastName: 'Administrator', email: 'admin@bookie.ba', passwordHash: adminPasswordHash, role: 'ADMIN', cityId: sarajevo.id },
+    create: { name: 'System Administrator', firstName: 'System', lastName: 'Administrator', email: 'admin@bookie.ba', passwordHash: adminPasswordHash, role: 'ADMIN', cityId: sarajevo.id },
   });
 
   const seller = await prisma.user.upsert({
     where: { email: 'prodavac@bookie.ba' },
     update: { role: 'SELLER', status: 'ACTIVE', passwordHash, cityId: sarajevo.id },
-    create: { name: 'Amina Hadžić', firstName: 'Amina', lastName: 'Hadžić', email: 'prodavac@bookie.ba', passwordHash, role: 'SELLER', bio: 'Studentica koja svojim knjigama daje novi život.', cityId: sarajevo.id },
+    create: { name: 'Amina Hadžić', firstName: 'Amina', lastName: 'Hadžić', email: 'prodavac@bookie.ba', passwordHash, role: 'SELLER', bio: 'A student giving her books a new life.', cityId: sarajevo.id },
   });
 
   const secondSeller = await prisma.user.upsert({
     where: { email: 'knjige@bookie.ba' },
     update: { role: 'SELLER', status: 'ACTIVE', passwordHash, cityId: mostar.id },
-    create: { name: 'Haris Kovač', firstName: 'Haris', lastName: 'Kovač', email: 'knjige@bookie.ba', passwordHash, role: 'SELLER', bio: 'Ljubitelj klasika, stripova i dobre kafe.', cityId: mostar.id },
+    create: { name: 'Haris Kovač', firstName: 'Haris', lastName: 'Kovač', email: 'knjige@bookie.ba', passwordHash, role: 'SELLER', bio: 'A fan of classics, comics and good coffee.', cityId: mostar.id },
   });
 
   const buyer = await prisma.user.upsert({
@@ -114,7 +114,7 @@ async function main() {
       genreId: genres[genreSlug].id, languageId: languages[languageCode].id,
       conditionId: conditions[conditionSlug].id, status: 'ACTIVE', averageRating,
       ratingCount: Math.max(3, Math.floor(viewCount / 4)), viewCount, completedOrderCount,
-      description: `${title} je pažljivo očuvana knjiga dostupna za novu policu i novog čitaoca.`,
+      description: `${title} is a carefully preserved book ready for a new shelf and reader.`,
     });
     await prisma.bookPickupLocation.upsert({ where: { bookId_cityId: { bookId: book.id, cityId } }, update: {}, create: { bookId: book.id, cityId } });
     await prisma.bookTag.upsert({ where: { bookId_tagId: { bookId: book.id, tagId: tags[tagSlug].id } }, update: {}, create: { bookId: book.id, tagId: tags[tagSlug].id } });
@@ -133,16 +133,16 @@ async function main() {
   await prisma.review.upsert({
     where: { orderItemId: orderItem.id },
     update: {},
-    create: { rating: 5, comment: 'Odlična knjiga i veoma korektan prodavač.', buyerId: buyer.id, bookId: books[0].id, orderItemId: orderItem.id, editableUntil: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+    create: { rating: 5, comment: 'Excellent book and a very reliable seller.', buyerId: buyer.id, bookId: books[0].id, orderItemId: orderItem.id, editableUntil: new Date(Date.now() + 24 * 60 * 60 * 1000) },
   });
 
-  await prisma.badge.upsert({ where: { name: 'Pouzdan prodavač' }, update: {}, create: { name: 'Pouzdan prodavač', description: 'Uspješno završene narudžbe i visoke ocjene.', icon: 'shield-check' } });
-  await prisma.notification.deleteMany({ where: { title: { in: ['Nova narudžba', 'Dobro došli u Bookie'] } } });
+  await prisma.badge.upsert({ where: { name: 'Reliable seller' }, update: {}, create: { name: 'Reliable seller', description: 'Successfully completed orders and high ratings.', icon: 'shield-check' } });
+  await prisma.notification.deleteMany({ where: { title: { in: ['New order', 'Welcome to Bookie'] } } });
   await prisma.notification.createMany({
-    data: [{ userId: seller.id, type: 'ORDER', title: 'Nova narudžba', body: 'Kupac je poslao novu narudžbu.' }, { userId: buyer.id, type: 'SYSTEM', title: 'Dobro došli u Bookie', body: 'Pronađite svoju sljedeću knjigu.' }],
+    data: [{ userId: seller.id, type: 'ORDER', title: 'New order', body: 'A buyer placed a new order.' }, { userId: buyer.id, type: 'SYSTEM', title: 'Welcome to Bookie', body: 'Find your next book.' }],
   });
 
-  console.log(`Seed završen: ${await prisma.user.count()} korisnika, ${await prisma.book.count()} knjiga, administrator #${admin.id}.`);
+  console.log(`Seed complete: ${await prisma.user.count()} users, ${await prisma.book.count()} books, administrator #${admin.id}.`);
 }
 
 main()

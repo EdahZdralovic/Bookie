@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>My published books — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/auth.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <a class="auth-back" href="/profile">← Back to profile</a>
+      <div class="profile-books-heading">
+        <div>
+          <p class="auth-step">MY LIBRARY</p>
+          <h1>My published books</h1>
+        </div>
+        <a class="auth-submit compact-action" href="/books/new">Add a book <span>↗</span> </a>
+      </div>
+      <div class="seller-book-list">
+        <% books.forEach((book) => { %>
+        <article class="seller-book-row">
+          <a class="seller-book-main" href="/books/<%= book.id %>">
+            <strong>
+              <%= book.title %>
+            </strong>
+            <span>
+              <%= book.author %>
+              ·
+              <%= book.status %>
+              ·
+              <%= Number(book.price).toFixed(2) %>
+              BAM</span>
+          </a>
+          <a class="secondary-action" href="/books/<%= book.id %>/edit">Edit</a>
+          <% if (book.status === 'ACTIVE') { %>
+          <form method="post" action="/books/<%= book.id %>/archive">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="filter-button" type="submit">Archive</button>
+          </form>
+          <% } else if (book.status === 'ARCHIVED') { %>
+          <form method="post" action="/books/<%= book.id %>/delete">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="filter-button" type="submit">Delete</button>
+          </form>
+          <% } %>
+        </article>
+        <% }) %>
+        <% if (!books.length) { %>
+        <p class="field-hint">You have not published any books yet.</p>
+        <% } %>
+      </div>
+    </main>
+  </body>
+</html>

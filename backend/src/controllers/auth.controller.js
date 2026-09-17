@@ -15,7 +15,10 @@ function formContext(page) {
 
 async function renderForm(req, res, error = null) {
   const page = res.locals.authPage;
-  const options = page === 'register' ? await authService.getRegistrationOptions() : { cities: [], genres: [], languages: [] };
+  const options =
+    page === 'register'
+      ? await authService.getRegistrationOptions()
+      : { cities: [], genres: [], languages: [] };
   return res.status(error?.status || HTTP.OK).render('pages/auth', {
     page,
     title: page === 'register' ? TEXT.REGISTER_BUTTON : TEXT.LOGIN_BUTTON,
@@ -39,7 +42,46 @@ async function login(req, res) {
 
 async function register(req, res) {
   const result = await authService.register(validator.validateRegistration(req.body));
+  if (result.verificationRequired)
+    return res.redirect(HTTP.REDIRECT, `/verify-email?email=${encodeURIComponent(result.email)}`);
   return finishAuthentication(res, result);
+}
+
+async function verificationForm(req, res) {
+  const user = req.query.email
+    ? await require('../repositories/user.repository').findByEmail(req.query.email)
+    : null;
+  const remaining = user?.verificationCodeSentAt
+    ? Math.max(0, 20 - Math.floor((Date.now() - user.verificationCodeSentAt.getTime()) / 1000))
+    : 0;
+  return res.render('pages/verify-email', {
+    title: 'Verify email',
+    email: req.query.email || '',
+    resendAfter: remaining,
+    formError: '',
+  });
+}
+async function verifyEmail(req, res, next) {
+  try {
+    const result = await authService.verifyEmail(req.body.email, req.body.code);
+    return finishAuthentication(res, result);
+  } catch (error) {
+    if (error.code === 'EMAIL_VERIFICATION_INVALID')
+      return res.status(error.status).render('pages/verify-email', {
+        title: 'Verify email',
+        email: req.body.email || '',
+        resendAfter: 0,
+        formError: error.message,
+      });
+    return next(error);
+  }
+}
+async function resendVerification(req, res) {
+  const result = await authService.resendVerification(req.body.email);
+  return res.redirect(
+    HTTP.REDIRECT,
+    `/verify-email?email=${encodeURIComponent(req.body.email)}&resendAfter=${result.retryAfter || 20}`,
+  );
 }
 
 async function logout(req, res) {
@@ -50,11 +92,25 @@ async function logout(req, res) {
 }
 
 function account(req, res) {
-  return res.render('pages/account', { title: TEXT.ACCOUNT_TITLE });
+  return res.render('pages/account', {
+    title: TEXT.ACCOUNT_TITLE,
+    bookCreated: req.query.bookCreated === '1',
+  });
 }
 
 function me(req, res) {
   return res.json({ user: req.user });
 }
 
-module.exports = { formContext, renderForm, login, register, logout, account, me };
+module.exports = {
+  formContext,
+  renderForm,
+  login,
+  register,
+  verificationForm,
+  verifyEmail,
+  resendVerification,
+  logout,
+  account,
+  me,
+};

@@ -29,6 +29,11 @@ Open `/login` or `/register`. A successful login or registration redirects to
 shows the signed-in name and a POST logout form. Existing demo credentials in the
 README still work; the stronger password rule applies to new registrations.
 
+Authenticated users can open `/profile` to change their avatar URL and saved genre
+and language interests. Only the current user's own profile is loaded or changed.
+Active sellers also see `/books/new`, where they can publish a listing. Buyers,
+administrators, anonymous users and inactive sellers cannot publish books.
+
 ## Registration contract
 
 | Field | Server and browser rule |
@@ -77,7 +82,7 @@ strings for interests). JSON requests receive structured exception responses:
 {
   "error": {
     "code": "VALIDATION_FAILED",
-    "message": "Provjerite označena polja i pokušajte ponovo.",
+    "message": "Check the marked fields and try again.",
     "fields": {
       "repeatPassword": "Lozinke se ne podudaraju."
     }

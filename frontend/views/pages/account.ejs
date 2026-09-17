@@ -1,26 +1,67 @@
 <!doctype html>
-<html lang="bs">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex">
-  <title><%= title %> — Bookie</title>
-  <link rel="stylesheet" href="/css/styles.css">
-  <link rel="stylesheet" href="/css/auth.css">
-</head>
-<body class="account-body">
-  <%- include('../components/header') %>
-  <main class="account-main">
-    <span class="account-avatar" aria-hidden="true"><%= currentUser.firstName.charAt(0) %><%= currentUser.lastName.charAt(0) %></span>
-    <p class="auth-step"><%= currentUser.name %></p>
-    <h1><%= authText.ACCOUNT_TITLE %></h1>
-    <p class="auth-description"><%= authText.ACCOUNT_SUBTITLE %></p>
-    <dl class="account-details">
-      <div><dt><%= authText.ACCOUNT_EMAIL %></dt><dd><%= currentUser.email %></dd></div>
-      <div><dt><%= authText.ACCOUNT_CITY %></dt><dd><%= currentUser.city?.name || authText.NO_CITY %></dd></div>
-      <div><dt><%= authText.ACCOUNT_ROLE %></dt><dd><%= { BUYER: authText.BUYER, SELLER: authText.SELLER, ADMIN: authText.ADMIN }[currentUser.role] %></dd></div>
-    </dl>
-    <a class="auth-submit account-explore" href="<%= auth.PATHS.HOME %>"><%= authText.EXPLORE %><span aria-hidden="true">↗</span></a>
-  </main>
-</body>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title><%= title %> — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/auth.css" />
+  </head>
+  <body class="account-body">
+    <main class="account-main">
+      <% if (bookCreated) { %>
+      <p class="success-alert" role="status"><%= strings.BOOK.SUCCESS %></p>
+      <% } %>
+      <% if (currentUser.avatarUrl) { %>
+      <img class="account-avatar" src="<%= currentUser.avatarUrl %>" alt="Profile image" />
+      <% } else { %>
+      <span class="account-avatar" aria-hidden="true">
+        <%= currentUser.firstName.charAt(0) %>
+        <%= currentUser.lastName.charAt(0) %>
+      </span>
+      <% } %>
+      <p class="auth-step"><%= currentUser.name %></p>
+      <h1 class=""><%= authText.ACCOUNT_TITLE %></h1>
+      <p class="auth-description"><%= authText.ACCOUNT_SUBTITLE %></p>
+      <dl class="account-details">
+        <div>
+          <dt>
+            <%= authText.ACCOUNT_EMAIL %>
+          </dt>
+          <dd>
+            <%= currentUser.email %>
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <%= authText.ACCOUNT_CITY %>
+          </dt>
+          <dd>
+            <%= currentUser.city?.name || authText.NO_CITY %>
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <%= authText.ACCOUNT_ROLE %>
+          </dt>
+          <dd>
+            <%= { BUYER: authText.BUYER, SELLER: authText.SELLER, ADMIN: authText.ADMIN }[currentUser.role] %>
+          </dd>
+        </div>
+      </dl>
+      <a class="auth-submit account-explore" href="<%= auth.PATHS.HOME %>">
+        <%= authText.EXPLORE %>
+        <span aria-hidden="true">↗</span>
+      </a>
+      <a class="auth-submit account-explore" href="/profile">
+        <%= strings.COMMON.EDIT_PROFILE %>
+      </a>
+      <% if (currentUser.role === 'SELLER') { %>
+      <a class="auth-submit account-explore" href="/books/new">
+        <%= strings.COMMON.ADD_BOOK %>
+      </a>
+      <% } %>
+    </main>
+  </body>
 </html>

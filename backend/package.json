@@ -21,7 +21,10 @@
     "db:status": "prisma migrate status",
     "test:db": "node --test tests/database.test.js",
     "test:browser": "node tests/browser-auth.js",
-    "auth:setup": "node scripts/auth-setup.js"
+    "auth:setup": "node scripts/auth-setup.js",
+    "format": "prettier --write \"src/**/*.js\" \"../frontend/src/**/*.{css,js}\" \"../frontend/public/css/auth.css\" \"prisma/seed.js\" \"scripts/**/*.js\" \"tests/**/*.js\" \"tailwind.config.js\" \"../frontend/public/js/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.js\" \"../frontend/src/**/*.{css,js}\" \"../frontend/public/css/auth.css\" \"prisma/seed.js\" \"scripts/**/*.js\" \"tests/**/*.js\" \"tailwind.config.js\" \"../frontend/public/js/**/*.js\"",
+    "test": "node --test tests/reliability.test.js"
   },
   "keywords": [],
   "author": "",
@@ -32,17 +35,21 @@
   "dependencies": {
     "@prisma/client": "^6.19.0",
     "bcryptjs": "^3.0.3",
+    "chart.js": "4.4.7",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "ejs": "^6.0.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "concurrently": "^10.0.5",
     "nodemon": "^3.1.14",
+    "prettier": "^3.6.2",
+    "prettier-plugin-ejs": "^1.0.3",
     "prisma": "^6.19.0",
     "supertest": "^7.2.2",
     "tailwindcss": "^3.4.17"

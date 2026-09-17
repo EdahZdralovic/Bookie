@@ -16,5 +16,12 @@ module.exports = Object.freeze({
   RATE_WINDOW_MS: 15 * 60 * 1000,
   LOGIN_LIMIT: 10,
   REGISTER_LIMIT: 5,
-  PATHS: Object.freeze({ HOME: '/', LOGIN: '/login', REGISTER: '/register', LOGOUT: '/logout', ACCOUNT: '/account', ME: '/api/auth/me' }),
+  PATHS: Object.freeze({
+    HOME: '/',
+    LOGIN: '/login',
+    REGISTER: '/register',
+    LOGOUT: '/logout',
+    ACCOUNT: '/account',
+    ME: '/api/auth/me',
+  }),
 });

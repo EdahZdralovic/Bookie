@@ -1,0 +1,11 @@
+const express = require('express');
+const controller = require('../controllers/community.controller');
+const { requireAuthentication } = require('../middleware/authorize.middleware');
+const { protectCsrf } = require('../middleware/csrf.middleware');
+const router = express.Router();
+router.param('id', require('../middleware/id.middleware'));
+router.get('/notifications', requireAuthentication, controller.notifications);
+router.post('/notifications/:id/read', requireAuthentication, protectCsrf, controller.markRead);
+router.get('/report', requireAuthentication, (req, res) => controller.reportForm(req, res));
+router.post('/report', requireAuthentication, protectCsrf, controller.report);
+module.exports = router;

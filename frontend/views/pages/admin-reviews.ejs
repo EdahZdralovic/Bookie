@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Review moderation — Bookie</title>
+<link rel="stylesheet" href="/css/styles.css" />
+<link rel="stylesheet" href="/css/auth.css" />
+</head>
+  <body class="account-body">
+<main class="form-page">
+<a class="auth-back" href="/admin">← Admin panel</a>
+<h1>Review moderation</h1>
+<p class="auth-description">Review ratings and comments before removing inappropriate content.</p>
+<form class="listing-filters" method="get">
+<select name="rating">
+<option value="">All ratings</option>
+<% [1,2,3,4,5].forEach((value) => { %>
+<option value="<%= value %>" <%= String(rating) === String(value) ? 'selected' : '' %>>
+<%= value %>/5</option>
+<% }) %>
+</select>
+<button class="filter-button" type="submit">Filter</button>
+</form>
+<div class="seller-book-list">
+<% reviews.forEach((review) => { %>
+<article class="seller-book-row">
+<div class="seller-book-info">
+<strong>
+<%= review.rating %>/5 · <%= review.orderItem.book.title %>
+</strong>
+<span>By <%= review.orderItem.order.buyer.firstName %> <%= review.orderItem.order.buyer.lastName %> · <%= review.orderItem.order.buyer.email %>
+</span>
+<span><%= review.comment || 'No written comment.' %></span>
+<span><%= review.createdAt.toLocaleDateString('en-US') %></span>
+</div>
+<form method="post" action="/admin/reviews/<%= review.id %>/delete">
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<button class="filter-button" type="submit">Remove review</button>
+</form>
+</article>
+<% }) %>
+<% if (!reviews.length) { %>
+<p class="field-hint">No reviews found.</p>
+<% } %>
+</div>
+</main>
+</body>
+</html>

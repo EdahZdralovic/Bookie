@@ -1,19 +1,27 @@
 # Bookie
 
-A college book exchange starter built with Node.js, Express, EJS, Tailwind CSS 3, Prisma, and PostgreSQL.
+Bookie is a web application for buying, selling and exchanging used books. It was made by Edah Ždralović for the course *Selected Topics in Computer Science*.
 
-## Implementation status
+Project defense date: 18 September 2026
 
-The current app implements the homepage, basic catalog search, JWT login, registration,
-logout and a protected account page. Most marketplace workflows still need their
-services, routes and screens. See [authentication setup and validation](docs/authentication.md).
+## Features
 
-See [the requirements audit and implementation plan](docs/implementation-plan.md)
-for folder responsibilities and the backend-first checklist. The PostgreSQL database
-foundation is now implemented; [database.md](docs/database.md) records the current
-schema and business rules remaining for the service layer.
+- Registration, email verification and JWT login
+- Seller and buyer profiles with interests and profile pictures
+- Book listings with images, search, filters and sorting
+- Cart, orders and exchange offers
+- Reviews, comments, chat and notifications
+- Reports and administration tools
+- Marketplace statistics with charts
 
-## Run locally
+## Technologies
+
+- Node.js and Express
+- EJS and Tailwind CSS
+- PostgreSQL and Prisma ORM
+- Resend for email notifications
+
+## Running locally
 
 ```bash
 cd backend
@@ -26,53 +34,27 @@ npm run db:seed
 npm run dev
 ```
 
-Open <http://localhost:3000>, [login](http://localhost:3000/login) or
-[registration](http://localhost:3000/register).
+Open http://localhost:3000 in your browser.
 
-The local database uses PostgreSQL on `127.0.0.1:55432`. See the
-[database setup and complete 33-table inventory](docs/database.md) for relationships,
-constraints, migrations, demo fixtures and `npm run test:db`. The old SQLite database
-is preserved; its schema and migrations are archived in `backend/prisma/legacy-sqlite`.
+Create `backend/.env` from `backend/.env.example` and set `DATABASE_URL`, `JWT_SECRET`, and the Resend values if email sending is needed.
 
-## Demo nalozi
+## Demo accounts
 
-| Uloga | Email | Lozinka |
-|---|---|---|
-| Administrator | `admin@bookie.ba` | `admin123` |
-| Prodavač | `prodavac@bookie.ba` | `student123` |
-| Kupac | `student@bookie.test` | `student123` |
+| Role | Email | Password |
+| --- | --- | --- |
+| Administrator | admin@bookie.ba | admin123 |
+| Seller | prodavac@bookie.ba | student123 |
+| Buyer | student@bookie.test | student123 |
 
-Administrator se kreira isključivo kroz `prisma/seed.js`, a ne kroz javnu registraciju.
+The administrator account is created by the database seed and cannot be registered through the application.
 
-## Moduli baze
+## Useful commands
 
-Prisma shema pokriva korisnike i sesije, lookup katalog, knjige i lokacije preuzimanja,
-interese kupaca, korpu, narudžbe i razmjene, recenzije, chat, notifikacije, prijave,
-wishlist alarme, sigurna pickup mjesta i značke prodavača.
+```bash
+npm run db:studio       # open Prisma Studio
+npm run test:db         # run database and workflow tests
+npm run test:browser    # run browser checks
+npm run format          # format the code
+```
 
-## Pet originalnih specifikacija
-
-1. **Ekološki učinak** — prikaz procijenjenog broja spašenih knjiga i uštede kroz kupovinu polovnih izdanja.
-2. **Pametni prijedlog cijene** — prijedlog cijene prema stanju, godini i sličnim oglasima.
-3. **Wishlist alarmi** — obavijest kada se pojavi traženi naslov, autor, ISBN, žanr ili jezik.
-4. **Sigurna campus pickup mjesta** — administrativno odobrene biblioteke, fakulteti i studentski domovi.
-5. **Značke pouzdanosti** — značke prodavača prema ocjenama, brzini odgovora i završenim narudžbama.
-
-## Main folders
-
-- `backend/src/controllers` — HTTP request handling
-- `backend/src/models` — application-facing data shapes; database models live in Prisma
-- `backend/src/services` — business logic and use cases
-- `backend/src/repositories` — Prisma and SQL queries
-- `backend/src/routes` — application routes
-- `backend/src/middleware` — Express middleware
-- `backend/src/exceptions` — centralized error and not-found handlers
-- `backend/src/config` — database and app configuration
-- `backend/prisma` — schema, migrations, and seed data
-- `frontend/views/pages` — EJS pages
-- `frontend/views/components` — reusable EJS components
-- `frontend/src` — Tailwind input, browser utilities, and constants
-- `frontend/public` — generated CSS and public JavaScript/assets
-
-See [backend architecture and authentication options](docs/backend-architecture.md)
-for layer responsibilities and authentication/authorization placement.
+The GitHub repository contains the complete source code, migrations and seed data.

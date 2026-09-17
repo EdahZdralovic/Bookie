@@ -1,0 +1,18 @@
+module.exports = Object.freeze({
+  NOTIFICATIONS: 'Notifications',
+  EMPTY: 'No notifications yet.',
+  MARK_READ: 'Mark as read',
+  OPEN: 'Open',
+  REPORT: 'Report a problem',
+  REASON: 'Describe the problem',
+  SEND_REPORT: 'Submit report',
+  REPORT_SENT: 'Your report has been sent to the administrator.',
+  NEW_ORDER: 'New order',
+  NEW_ORDER_BODY: 'A reader has requested your book. Open your orders to respond.',
+  NEW_MESSAGE: 'New message',
+  NEW_MESSAGE_BODY: 'You have a new message. Open the conversation to reply.',
+  NEW_REVIEW: 'New review',
+  NEW_REVIEW_BODY: 'A reader has reviewed your book.',
+  DELETE: 'Delete',
+  RESTORE: 'Restore listing',
+});

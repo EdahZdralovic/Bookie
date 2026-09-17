@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reports — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/auth.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <a class="auth-back" href="/admin">← Admin panel</a>
+      <h1>User reports</h1>
+      <form class="listing-filters" method="get">
+        <select name="status">
+          <option value="">All reports</option>
+          <option value="OPEN">Open</option>
+          <option value="IN_REVIEW">In review</option>
+          <option value="RESOLVED">Resolved</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+        <button class="filter-button">Filter</button>
+      </form>
+      <div class="seller-book-list">
+        <% reports.forEach((report) => { %>
+        <article class="seller-book-row">
+          <div class="seller-book-info">
+            <strong>
+              <%= report.reason %>
+            </strong>
+            <span
+              >From
+              <%= report.reporter.firstName %>
+              <%= report.reporter.lastName %>
+              ·
+              <%= report.createdAt.toLocaleDateString('en-US') %>
+            </span>
+            <span><%= report.details || 'No details provided.' %></span>
+            <span><%= report.book?.title || report.reportedUser?.email || 'General report' %></span>
+          </div>
+          <form method="post" action="/admin/reports/<%= report.id %>/status">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <select name="status">
+              <option value="IN_REVIEW">In review</option>
+              <option value="RESOLVED">Resolved</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+            <button class="filter-button">Update</button>
+          </form>
+        </article>
+        <% }) %>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title><%= title %> — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <h1><%= community.NOTIFICATIONS %></h1>
+      <div class="seller-book-list">
+        <% notifications.forEach((notification) => { %>
+          <article class="seller-book-row">
+            <div class="seller-book-info">
+              <strong><%= notification.title %></strong>
+              <p><%= notification.body %></p>
+              <% if (notification.link?.startsWith('/') && !notification.link.startsWith('//')) { %>
+                <a href="<%= notification.link %>"><%= community.OPEN %></a>
+              <% } %>
+            </div>
+            <% if (!notification.isRead) { %>
+              <form method="post" action="/notifications/<%= notification.id %>/read">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button class="filter-button" type="submit"><%= community.MARK_READ %></button>
+              </form>
+            <% } %>
+          </article>
+        <% }) %>
+        <% if (!notifications.length) { %>
+          <p class="field-hint"><%= community.EMPTY %></p>
+        <% } %>
+      </div>
+    </main>
+  </body>
+</html>

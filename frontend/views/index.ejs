@@ -1,0 +1,15 @@
+<% const source = typeof body === 'string' ? body : ''; %>
+<% const withFavicon = source.replace('</head>', '<link rel="icon" href="/images/bookie/favicon" type="image/x-icon"><link rel="stylesheet" href="/css/auth.css">' + String.fromCharCode(10) + '</head>'); %>
+<% if (!useShell) { %>
+  <%- withFavicon %>
+<% } else { %>
+  <% const bodyStart = withFavicon.indexOf('<body'); const bodyOpenEnd = withFavicon.indexOf('>', bodyStart) + 1; const bodyEnd = withFavicon.indexOf('</body>'); const documentEnd = withFavicon.indexOf('</html>'); const trailing = documentEnd >= 0 ? withFavicon.slice(documentEnd + 7) : ''; %>
+  <%- withFavicon.slice(0, bodyOpenEnd) %>
+  <%- include('components/header', { suppressShell: false }) %>
+  <script src="/js/main.js" defer>
+</script>
+  <%- withFavicon.slice(bodyOpenEnd, bodyEnd) %>
+  <%- trailing %>
+  <%- include('components/footer', { suppressShell: false }) %>
+  <%- withFavicon.slice(bodyEnd, documentEnd + 7) %>
+<% } %>

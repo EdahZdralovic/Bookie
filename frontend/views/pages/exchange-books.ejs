@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Exchange books — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/auth.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <p class="auth-step">EXCHANGE INVENTORY</p>
+      <h1>Books I offer for exchange</h1>
+      <p class="auth-description">
+        Manage books you are willing to trade. Exchange listings never enable cash sales.
+      </p>
+      <a class="auth-submit compact-action" href="/books/new?exchange=1"
+        >Add book for exchange <span>↗</span>
+      </a>
+      <div class="seller-book-list">
+        <% books.forEach((book) => { %>
+        <article class="seller-book-row">
+          <div class="seller-book-info">
+            <strong>
+              <%= book.title %>
+            </strong>
+            <span>
+              <%= book.author %>
+              ·
+              <%= book.genre.name %>
+              ·
+              <%= book.status %>
+            </span>
+          </div>
+          <a class="secondary-action" href="/books/<%= book.id %>">View</a>
+          <a class="secondary-action" href="/books/<%= book.id %>/edit">Edit</a>
+          <% if (book.status === 'ACTIVE') { %>
+          <form method="post" action="/exchange-books/<%= book.id %>/archive">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="filter-button" type="submit">Archive</button>
+          </form>
+          <% } else if (book.status === 'ARCHIVED') { %>
+          <form method="post" action="/exchange-books/<%= book.id %>/delete">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="filter-button" type="submit">Delete</button>
+          </form>
+          <% } %>
+        </article>
+        <% }) %>
+        <% if (!books.length) { %>
+        <p class="field-hint">No exchange books yet.</p>
+        <% } %>
+      </div>
+    </main>
+  </body>
+</html>

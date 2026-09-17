@@ -1,0 +1,18 @@
+const express = require('express');
+const controller = require('../controllers/marketplace.controller');
+const { requireAuthentication } = require('../middleware/authorize.middleware');
+const { protectCsrf } = require('../middleware/csrf.middleware');
+const router = express.Router();
+for (const name of ['id', 'bookId', 'itemId'])
+  router.param(name, require('../middleware/id.middleware'));
+router.get('/cart', requireAuthentication, controller.cart);
+router.post('/cart/:bookId', requireAuthentication, protectCsrf, controller.add);
+router.post('/cart/:bookId/remove', requireAuthentication, protectCsrf, controller.remove);
+router.post('/checkout', requireAuthentication, protectCsrf, controller.checkout);
+router.get('/orders', requireAuthentication, controller.orders);
+router.post('/orders/:id/status', requireAuthentication, protectCsrf, controller.changeOrder);
+router.post('/exchange', requireAuthentication, protectCsrf, controller.exchange);
+router.post('/reviews/:itemId', requireAuthentication, protectCsrf, controller.review);
+router.post('/reviews/:id/edit', requireAuthentication, protectCsrf, controller.editReview);
+router.post('/reviews/:id/delete', requireAuthentication, protectCsrf, controller.deleteReview);
+module.exports = router;

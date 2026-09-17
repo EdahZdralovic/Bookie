@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Edit exchange book — Bookie</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/auth.css" />
+  </head>
+  <body class="account-body">
+    <main class="form-page">
+      <a class="auth-back" href="/exchange-books">← Back to exchange books</a>
+      <h1>Edit exchange book</h1>
+      <form class="workflow-form" method="post" action="/exchange-books/<%= book.id %>/edit">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <div class="auth-field">
+          <label for="title">Title</label>
+          <input id="title" name="title" required value="<%= book.title %>" />
+        </div>
+        <div class="auth-field">
+          <label for="author">Author</label>
+          <input id="author" name="author" required value="<%= book.author %>" />
+        </div>
+        <div class="auth-field">
+          <label for="publisher">Publisher</label>
+          <input id="publisher" name="publisher" required value="<%= book.publisher %>" />
+        </div>
+        <div class="auth-field">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" rows="5" required>
+<%= book.description %>
+</textarea>
+        </div>
+        <button class="auth-submit" type="submit">Save changes <span>↗</span></button>
+      </form>
+    </main>
+  </body>
+</html>

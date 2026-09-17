@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+<%= title %> — Bookie</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/auth.css">
+</head>
+<body class="account-body">
+  <main class="form-page profile-page">
+    <a class="auth-back" href="/account">← <%= strings.PROFILE.ACCOUNT %>
+</a>
+    <div class="profile-heading">
+<div class="profile-preview">
+<% if (values.avatarUrl) { %>
+<img src="<%= values.avatarUrl %>" alt="Profile preview">
+<% } else { %>
+<span>
+<%= profile.firstName.charAt(0) %>
+<%= profile.lastName.charAt(0) %>
+</span>
+<% } %>
+</div>
+<div>
+<p class="auth-step">
+<%= strings.PROFILE.EYEBROW %>
+</p>
+<h1>
+<%= strings.PROFILE.HEADING %>
+</h1>
+<p class="auth-description">
+<%= strings.PROFILE.DESCRIPTION %>
+</p>
+</div>
+</div>
+    <% if (saved) { %>
+<p class="success-alert" role="status">
+<%= strings.PROFILE.SUCCESS %>
+</p>
+<% } %>
+    <div class="profile-actions">
+<a class="secondary-action" href="/profile?edit=1">Edit profile</a>
+<a class="secondary-action" href="/profile/books">My published books</a>
+</div>
+    <% if (!editMode) { %>
+<section class="profile-summary">
+<p>
+<strong>Email</strong>
+<%= profile.email %>
+</p>
+<p>
+<strong>Phone</strong>
+<%= profile.phone %>
+</p>
+<p>
+<strong>Location</strong>
+<%= profile.city?.name || 'Not specified' %>
+</p>
+<p>
+<strong>Genres</strong>
+<%= profile.genreInterests.map((item) => item.genre?.name || '').filter(Boolean).join(', ') || 'None selected' %>
+</p>
+<p>
+<strong>Languages</strong>
+<%= profile.languageInterests.map((item) => item.language?.name || '').filter(Boolean).join(', ') || 'None selected' %>
+</p>
+</section>
+<% } %>
+    <% if (editMode) { %>
+<form class="workflow-form" method="post" action="/profile" enctype="multipart/form-data" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (formError) { %>
+<div class="form-alert" role="alert">
+<span class="alert-icon">!</span>
+<div>
+<strong>
+<%= strings.COMMON.ERROR_TITLE %>
+</strong>
+<p>
+<%= formError %>
+</p>
+</div>
+</div>
+<% } %>
+      <div class="auth-field">
+<label for="avatar">Profile picture</label>
+<input id="avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/webp">
+<p class="field-hint">Optional. JPG, PNG or WebP up to 5 MB.</p>
+<p class="field-error">
+<%= errors.avatarUrl || '' %>
+</p>
+</div>
+      <div class="auth-field">
+<label for="phone">Phone number<span class="required-star">*</span>
+</label>
+<input id="phone" name="phone" type="tel" value="<%= values.phone || profile.phone || '' %>" required>
+<p class="field-error">
+<%= errors.phone || '' %>
+</p>
+</div>
+      <div class="auth-field">
+        <label for="cityId"><%= strings.WORKFLOW.CITY %></label>
+        <select id="cityId" name="cityId" required>
+          <% cities.forEach((city) => { %>
+            <option value="<%= city.id %>" <%= Number(values.cityId) === city.id ? 'selected' : '' %>><%= city.name %></option>
+          <% }) %>
+        </select>
+        <p class="field-error"><%= errors.cityId || '' %></p>
+      </div>
+      <div class="auth-field">
+        <label for="bio"><%= strings.WORKFLOW.BIO %></label>
+        <textarea id="bio" name="bio" maxlength="1000"><%= values.bio || '' %></textarea>
+        <p class="field-error"><%= errors.bio || '' %></p>
+      </div>
+      <% if (profile.role === 'BUYER') { %>
+      <div class="interests-panel">
+<p class="interest-hint">
+<%= strings.PROFILE.INTEREST_HINT %>
+</p>
+        <% [['genreIds', strings.PROFILE.GENRES, genres], ['languageIds', strings.PROFILE.LANGUAGES, languages]].forEach(([name, label, choices]) => { %>
+<fieldset class="auth-field interest-field">
+<legend>
+<%= label %>
+</legend>
+<div class="interest-options">
+<% choices.forEach((choice) => { %>
+<label class="interest-chip">
+<input type="checkbox" name="<%= name %>" value="<%= choice.id %>" <%= (values[name] || []).map(String).includes(String(choice.id)) ? 'checked' : '' %>>
+<span><%= choice.name %></span>
+</label>
+<% }) %>
+</div>
+<p class="field-error">
+<%= errors[name] || errors.interests || '' %>
+</p>
+</fieldset>
+<% }) %>
+      </div>
+      <% } %>
+      <button class="auth-submit" type="submit">
+<%= strings.PROFILE.SAVE %>
+<span>↗</span>
+</button>
+    </form>
+    <form class="workflow-form" method="post" action="/profile/password">
+      <h2><%= strings.WORKFLOW.PASSWORD_TITLE %></h2>
+      <p class="field-hint"><%= strings.WORKFLOW.PASSWORD_NOTE %></p>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <% [['currentPassword', strings.WORKFLOW.CURRENT_PASSWORD], ['password', strings.WORKFLOW.NEW_PASSWORD], ['repeatPassword', strings.WORKFLOW.REPEAT_PASSWORD]].forEach(([name, label]) => { %>
+        <div class="auth-field">
+          <label for="<%= name %>"><%= label %></label>
+          <input id="<%= name %>" name="<%= name %>" type="password" required maxlength="72" autocomplete="<%= name === 'currentPassword' ? 'current-password' : 'new-password' %>" />
+          <p class="field-error"><%= errors[name] || '' %></p>
+        </div>
+      <% }) %>
+      <button class="auth-submit" type="submit"><%= strings.WORKFLOW.PASSWORD_TITLE %></button>
+    </form>
+
+<% } %>
+    <% if (profile.role === 'SELLER') { %>
+      <section class="seller-books">
+<div class="seller-books-heading">
+<div>
+<p class="auth-step">YOUR LISTINGS</p>
+<h2>My books</h2>
+</div>
+<a class="auth-submit compact-action" href="/books/new">Add a book <span>↗</span>
+</a>
+</div>
+        <form class="listing-filters" method="get" action="/profile">
+<label>Status<select name="status">
+<option value="">All books</option>
+<option value="ACTIVE" <%= filters.status === 'ACTIVE' ? 'selected' : '' %>>Active</option>
+<option value="SOLD" <%= filters.status === 'SOLD' ? 'selected' : '' %>>Sold</option>
+<option value="ARCHIVED" <%= filters.status === 'ARCHIVED' ? 'selected' : '' %>>Archived</option>
+</select>
+</label>
+<label>Sort by<select name="sort">
+<option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Date added</option>
+<option value="price" <%= filters.sort === 'price' ? 'selected' : '' %>>Price</option>
+<option value="title" <%= filters.sort === 'title' ? 'selected' : '' %>>Title</option>
+</select>
+</label>
+<button class="filter-button" type="submit">Apply filters</button>
+</form>
+        <div class="seller-book-list">
+<% sellerBooks.forEach((book) => { %>
+<article class="seller-book-row">
+<a class="seller-book-main" href="/books/<%= book.id %>">
+<div class="seller-book-thumb">
+<% if (book.imageUrl) { %>
+<img src="<%= book.imageUrl %>" alt="">
+<% } else { %>
+<span><%= book.title.charAt(0) %></span>
+<% } %>
+</div>
+<div class="seller-book-info">
+<strong><%= book.title %></strong>
+<span><%= book.author %> · <%= book.genre.name %></span>
+</div>
+<span class="listing-status status-<%= book.status.toLowerCase() %>">
+<%= book.status.charAt(0) + book.status.slice(1).toLowerCase() %>
+</span>
+<strong class="seller-book-price">
+<%= Number(book.price).toFixed(2) %> KM</strong>
+</a>
+<div class="book-row-actions">
+<a class="secondary-action" href="/books/<%= book.id %>/edit">Edit</a>
+<% if (book.status === 'ACTIVE') { %>
+<form method="post" action="/books/<%= book.id %>/archive">
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<button class="filter-button" type="submit">Archive</button>
+</form>
+<% } else if (book.status === 'ARCHIVED') { %>
+<form method="post" action="/books/<%= book.id %>/delete">
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<button class="filter-button" type="submit">Delete</button>
+</form>
+<% } %>
+</div>
+</article>
+<% }) %>
+<% if (!sellerBooks.length) { %>
+<p class="field-hint">No books match these filters.</p>
+<% } %>
+</div>
+      </section>
+    <% } %>
+  </main>
+</body>
+</html>
